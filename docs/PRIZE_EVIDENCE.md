@@ -259,7 +259,7 @@ Plus a v2-fork finding reported back in `FEEDBACK.md`.
 | "integrate any part of the Uniswap stack" | Official Uniswap v3 subgraph, queried per decision cycle through The Graph gateway. [`arc_agents/subgraph.py`](../arc_agents/subgraph.py) |
 | "A public GitHub repository with open-source code" | https://github.com/NoBanks/traide-arc-agents, MIT, public |
 | "a FEEDBACK.md file" | [FEEDBACK.md](../FEEDBACK.md) at the repo root, linked from the README |
-| "a completed submission to the Uniswap Developer Feedback Form" | **NOT SUBMITTED.** Form verified live at https://developers.uniswap.org/hackathon-feedback (HTTP 200, 2026-09-07). Every field captured with drafted answers in [docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md](UNISWAP_FEEDBACK_FORM_ANSWERS.md). Ryan submits it in the browser |
+| "a completed submission to the Uniswap Developer Feedback Form" | **SUBMITTED by Ryan 2026-09-07 ~15:45 PT (form at developers.uniswap.org/hackathon-feedback, filled from docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md).** Form verified live at https://developers.uniswap.org/hackathon-feedback (HTTP 200, 2026-09-07). Every field captured with drafted answers in [docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md](UNISWAP_FEEDBACK_FORM_ANSWERS.md). Ryan submits it in the browser |
 | Continuity pool | Disclosure at the top of this document |
 
 ### Uniswap stack usage, file and line pointers
@@ -318,7 +318,7 @@ Honest list, so nothing here reads better than it is.
 3. **Prize selection.** The form allows up to 3 partner prizes, and all three are now chosen:
    Arc Track C, Arc Track E, The Graph AI Continuity, plus Uniswap Foundation Continuity mapped
    above. This document is the argument for each.
-4. **Uniswap Developer Feedback Form. NOT SUBMITTED.** Required by the Uniswap prize line.
+4. **Uniswap Developer Feedback Form. SUBMITTED by Ryan 2026-09-07 ~15:45 PT (form at developers.uniswap.org/hackathon-feedback, filled from docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md).** Required by the Uniswap prize line.
    Answers drafted in [docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md](UNISWAP_FEEDBACK_FORM_ANSWERS.md);
    Ryan submits it in the browser. Note the five dropdowns are JavaScript-populated, so their
    exact options must be read on the page rather than guessed.
