@@ -51,6 +51,13 @@ from . import config
 
 NO_KEY_MESSAGE = "[GRAPH] no API key, not trading"
 
+# Steady-state DEX transaction rate on the reference network, summed across the
+# factories the keyless dexes endpoint reports. Measured on 2026-09-07 with four
+# unauthenticated polls 60 seconds apart: 10.83, 8.24 and 9.85 transactions per
+# second across the three windows, mean 9.64. Raw data is committed at
+# docs/graph_activity_baseline.json. This number is a measurement, not a guess.
+BASE_ACTIVITY_TX_PER_SECOND = 9.64
+
 
 @dataclass
 class GraphCall:
@@ -331,12 +338,12 @@ class GraphClient:
                     elapsed = max(now - pt, 1.0)
                     tx_rate = (tx - ptx) / elapsed
                     uaw_delta = uaw - puaw
-                    # Normalized so a quiet network sits near zero and a busy one
-                    # near one. The divisor is the observed steady-state rate on
-                    # Base, measured live rather than assumed: see README.
-                    sig.activity_score = max(min(tx_rate / 400.0, 2.0), -2.0) + (
-                        0.001 * uaw_delta
-                    )
+                    # Momentum, not level: how far the live transaction rate sits
+                    # from the measured steady state. BASE_ACTIVITY_TX_PER_SECOND
+                    # was measured against this exact endpoint, not assumed. See
+                    # docs/graph_activity_baseline.json for the raw windows.
+                    deviation = (tx_rate / BASE_ACTIVITY_TX_PER_SECOND) - 1.0
+                    sig.activity_score = max(min(deviation, 2.0), -2.0) + 0.01 * uaw_delta
                     if sig.tier == "none":
                         sig.tier = "activity"
                         sig.notes.append(

@@ -108,7 +108,10 @@ DEPLOYER_FLOOR_USDC_UNITS = 10_000_000     # never draw the deployer below 10 US
 SWAP_MIN_USDC_UNITS = 1_000                # 0.001 USDC
 SWAP_MAX_USDC_UNITS = 10_000               # 0.010 USDC
 
-CYCLE_SECONDS = int(os.environ.get("ARC_AGENT_CYCLE_SECONDS", "180"))
+# Production cadence. At 300 seconds a full day is 288 cycles, which at roughly
+# 0.0025 USDC of gas per transaction keeps the agents inside their funding for
+# the whole judging window. The burn-in run used --interval 60.
+CYCLE_SECONDS = int(os.environ.get("ARC_AGENT_CYCLE_SECONDS", "300"))
 
 # ------------------------------------------------------------------- env reads
 

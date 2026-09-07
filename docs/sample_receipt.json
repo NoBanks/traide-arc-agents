@@ -1,0 +1,82 @@
+{
+  "anchor": {
+    "anchor_contract": "0x107B82c61E006A962a6C4ec1E9379667B6fa3f09",
+    "block": 60966664,
+    "effective_gas_price": 30000000000,
+    "explorer": "https://testnet.arcscan.app/tx/0x12d076a82926eaddca07d6196dbd8047134e1c8789081b7544777936c41f72d2",
+    "gas_used": 73814,
+    "hash": "0x12d076a82926eaddca07d6196dbd8047134e1c8789081b7544777936c41f72d2",
+    "label": "anchor",
+    "receipt_hash": "16312d8b0656da2deb92aeaf5d93bdf36b00b16456d07318718a1d8c63807628",
+    "status": 1
+  },
+  "canonical_rule": "json.dumps(receipt, sort_keys=True, separators=(',',':')).encode('utf-8') then sha256",
+  "note": "One real decision from a real cycle. receipt_hash is sha256 of the canonical bytes of the receipt object below, using the same rule as traide-keeper. anchor.hash is the Arc transaction that wrote that hash into ArcReceiptAnchor.",
+  "prev_receipt_hash": "cbb3b95f30d110de6e3f4dc2390121889acc119513fd66b550aade5070894253",
+  "receipt": {
+    "action": "SELL_LINK",
+    "agent": "AGGRESSIVE",
+    "agent_address": "0x5C33e8ec0087522F883a32A76D486D8ab2282701",
+    "balances": {
+      "link_wei_18": 1995526261114336794330,
+      "native_wei_18": 980406010000000000,
+      "usdc_units_6": 980406
+    },
+    "chain_id": 5042002,
+    "cycle": 6,
+    "engine": "traide-arc-agents",
+    "engine_version": "1.0.0",
+    "graph": {
+      "calls": [
+        {
+          "authenticated": false,
+          "endpoint": "https://api.pinax.network/v1/evm/dexes",
+          "fetched_at": "2026-09-07T20:54:21Z",
+          "ok": true,
+          "params": {
+            "network": "base"
+          },
+          "provider": "thegraph-token-api",
+          "response_bytes": 1927,
+          "response_sha256": "41af92ae345157e5477762e132ea143f5778d7154a5bbe61cff559e2de7b0118",
+          "status": 200
+        }
+      ],
+      "signal": {
+        "activity_score": -0.11981705185593106,
+        "price": null,
+        "price_change": null
+      },
+      "tier": "activity"
+    },
+    "pool": {
+      "amm": "0x4b6781AfC7e91D65acdD37a424D7A43f170f9120",
+      "reserves": {
+        "link_wei_18": 16648324439576293951540,
+        "usdc_units_6": 1986351
+      },
+      "token_a": "0x3600000000000000000000000000000000000000",
+      "token_b": "0x4A8ac01265a030Aad32fb9B7bD5f89Be18f21858",
+      "venue": "TRAIDEAMM"
+    },
+    "reason": "AGGRESSIVE follows the trend. Graph activity tier: DEX momentum -0.120 below -0.05",
+    "swap": {
+      "amount_in": "39910525222286737408",
+      "block": 60966660,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x2dc503b25b19efe2bcc05cafe5bdb1733ab18861fa1f9db8bbcc8236d356ec2b",
+      "gas_used": 108892,
+      "hash": "0x2dc503b25b19efe2bcc05cafe5bdb1733ab18861fa1f9db8bbcc8236d356ec2b",
+      "label": "swap",
+      "min_out": "4645",
+      "quoted_out": "4740",
+      "status": 1,
+      "token_in": "0x4A8ac01265a030Aad32fb9B7bD5f89Be18f21858",
+      "token_out": "0x3600000000000000000000000000000000000000",
+      "venue": "TRAIDEAMM"
+    },
+    "timestamp": "2026-09-07T20:54:32Z",
+    "type": "arc_agent_decision"
+  },
+  "receipt_hash": "16312d8b0656da2deb92aeaf5d93bdf36b00b16456d07318718a1d8c63807628"
+}

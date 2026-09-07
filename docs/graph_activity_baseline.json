@@ -1,0 +1,24 @@
+{
+  "measured_at": "2026-09-07T20:45Z",
+  "source": "https://api.pinax.network/v1/evm/dexes?network=base (keyless, The Graph Token API)",
+  "method": "four unauthenticated polls 60 seconds apart, summing transactions and uaw across all reported factories, then differencing",
+  "windows": [
+    {
+      "dt": 60.8,
+      "tx_per_s": 10.83,
+      "uaw_delta": 3
+    },
+    {
+      "dt": 60.6,
+      "tx_per_s": 8.24,
+      "uaw_delta": 1
+    },
+    {
+      "dt": 60.5,
+      "tx_per_s": 9.85,
+      "uaw_delta": 0
+    }
+  ],
+  "mean_tx_per_second": 9.64,
+  "note": "This is the divisor used by graph.GraphClient to turn a live transaction rate into a momentum score. It was measured, not assumed."
+}

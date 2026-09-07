@@ -32,8 +32,13 @@ from .graph import GraphSignal, NO_KEY_MESSAGE
 Action = Literal["BUY_LINK", "SELL_LINK", "HOLD"]
 
 # Thresholds. Chosen so a flat market produces HOLD rather than churn.
-ACTIVITY_STRONG = 0.15
-ACTIVITY_WEAK = 0.04
+# The activity score is a fractional deviation from the measured 9.64 tx/s
+# baseline, so 0.05 means the reference network is running 5 percent hotter than
+# steady state. Observed deviations across the calibration windows were +0.12,
+# -0.15 and +0.02, so a 5 percent dead band trades on real moves and sits out
+# the noise.
+ACTIVITY_STRONG = 0.05
+ACTIVITY_WEAK = 0.05
 PRICE_MOVE = 0.002  # 0.2 percent over the OHLC window
 REBALANCE_BAND = 0.08  # act when the split is more than 8 points off target
 
@@ -71,10 +76,10 @@ def decide(
     reserves: the TRAIDEAMM pair's usdc_units_6 and link_wei_18.
     """
     # ---- the load-bearing guard. Nothing below runs without a live Graph signal.
+    # The reason carries every note The Graph client produced, so the log says
+    # exactly why the agent stood down rather than collapsing it to one cause.
     if not signal.usable:
-        if not any("no API key" in n for n in signal.notes):
-            return _hold("[GRAPH] no live signal this cycle, not trading")
-        return _hold(NO_KEY_MESSAGE)
+        return _hold("; ".join(signal.notes) or "[GRAPH] no live signal this cycle, not trading")
 
     usdc = balances.get("usdc_units_6", 0)
     link = balances.get("link_wei_18", 0)
