@@ -1,0 +1,125 @@
+{
+  "agents": [
+    {
+      "address": "0x537F486eAEc5e564f3F9d8d010f8A5992cda2544",
+      "derivation_path": "m/44'/60'/0'/0/1",
+      "explorer": "https://testnet.arcscan.app/address/0x537F486eAEc5e564f3F9d8d010f8A5992cda2544",
+      "name": "PASSIVE"
+    },
+    {
+      "address": "0x5C33e8ec0087522F883a32A76D486D8ab2282701",
+      "derivation_path": "m/44'/60'/0'/0/2",
+      "explorer": "https://testnet.arcscan.app/address/0x5C33e8ec0087522F883a32A76D486D8ab2282701",
+      "name": "AGGRESSIVE"
+    },
+    {
+      "address": "0x27e13BC4CB091E7696D66c30887E3EE85f477c3B",
+      "derivation_path": "m/44'/60'/0'/0/3",
+      "explorer": "https://testnet.arcscan.app/address/0x27e13BC4CB091E7696D66c30887E3EE85f477c3B",
+      "name": "REBALANCE"
+    }
+  ],
+  "amm": "0x4b6781AfC7e91D65acdD37a424D7A43f170f9120",
+  "anchor": {
+    "address": "0x107B82c61E006A962a6C4ec1E9379667B6fa3f09",
+    "code_bytes": 586,
+    "deploy_tx": {
+      "block": 60965925,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x5d87f7b33ba3bcc025e99f0fb43c70bbcb3c5a9bdbc3d9009449fb3f27a971c5",
+      "gas_used": 179975,
+      "hash": "0x5d87f7b33ba3bcc025e99f0fb43c70bbcb3c5a9bdbc3d9009449fb3f27a971c5",
+      "label": "deploy_anchor",
+      "status": 1
+    },
+    "explorer": "https://testnet.arcscan.app/address/0x107B82c61E006A962a6C4ec1E9379667B6fa3f09",
+    "solc": "0.8.25"
+  },
+  "chain_id": 5042002,
+  "deployer": "0xcEDdA90b60748e04Ff9C4123c5f49544611748e5",
+  "linkmock": "0x4A8ac01265a030Aad32fb9B7bD5f89Be18f21858",
+  "txs": {
+    "add_liquidity": {
+      "block": 60965894,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x671aef8352d4b5c8bfdd1e630ae91403852aa591e0ab17763a9141f94ad3cdec",
+      "gas_used": 109716,
+      "hash": "0x671aef8352d4b5c8bfdd1e630ae91403852aa591e0ab17763a9141f94ad3cdec",
+      "label": "add_liquidity",
+      "status": 1
+    },
+    "approve_link_amm": {
+      "block": 60965890,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0xd251d11955b9f98737d787aa177997a395dcb8704504038fade7d9c9cdbd38f0",
+      "gas_used": 46029,
+      "hash": "0xd251d11955b9f98737d787aa177997a395dcb8704504038fade7d9c9cdbd38f0",
+      "label": "approve_link_amm",
+      "status": 1
+    },
+    "approve_usdc_amm": {
+      "block": 60965886,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x94378b02a3c44759872cf27926b2d0b38403a50a27ea39a474109e3611fe2dd8",
+      "gas_used": 55438,
+      "hash": "0x94378b02a3c44759872cf27926b2d0b38403a50a27ea39a474109e3611fe2dd8",
+      "label": "approve_usdc_amm",
+      "status": 1
+    },
+    "fund_link_AGGRESSIVE": {
+      "block": 60965913,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0xe989d78017ad5112741aa2e531134e5f27da2ddca3ec0f6fbc823e875ad91fe0",
+      "gas_used": 51265,
+      "hash": "0xe989d78017ad5112741aa2e531134e5f27da2ddca3ec0f6fbc823e875ad91fe0",
+      "label": "fund_link_AGGRESSIVE",
+      "status": 1
+    },
+    "fund_link_PASSIVE": {
+      "block": 60965905,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x94772373793aa2c8234fedb328d24cba01aadb8208dcd5af4d0eba8105e480c9",
+      "gas_used": 51277,
+      "hash": "0x94772373793aa2c8234fedb328d24cba01aadb8208dcd5af4d0eba8105e480c9",
+      "label": "fund_link_PASSIVE",
+      "status": 1
+    },
+    "fund_link_REBALANCE": {
+      "block": 60965921,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0xbadd5344fdde8a9bba8452e80bd58c9bf9546839c8579f9f54a5ebae770474ff",
+      "gas_used": 51277,
+      "hash": "0xbadd5344fdde8a9bba8452e80bd58c9bf9546839c8579f9f54a5ebae770474ff",
+      "label": "fund_link_REBALANCE",
+      "status": 1
+    },
+    "fund_usdc_AGGRESSIVE": {
+      "block": 60965909,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x02dd6c15455f1496fa65629b8c673b74f9423ff0337d89ba6b8119957732d3e3",
+      "gas_used": 21000,
+      "hash": "0x02dd6c15455f1496fa65629b8c673b74f9423ff0337d89ba6b8119957732d3e3",
+      "label": "fund_usdc_AGGRESSIVE",
+      "status": 1
+    },
+    "fund_usdc_PASSIVE": {
+      "block": 60965900,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0xbffca526f19b147f8d2cb2f347ec07edd17393266da68c9618003c5b1d1115e7",
+      "gas_used": 21000,
+      "hash": "0xbffca526f19b147f8d2cb2f347ec07edd17393266da68c9618003c5b1d1115e7",
+      "label": "fund_usdc_PASSIVE",
+      "status": 1
+    },
+    "fund_usdc_REBALANCE": {
+      "block": 60965918,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x4193bec70c813943e9624034764be46b390b6524b4f0bb978f2d4b6b4332977c",
+      "gas_used": 21000,
+      "hash": "0x4193bec70c813943e9624034764be46b390b6524b4f0bb978f2d4b6b4332977c",
+      "label": "fund_usdc_REBALANCE",
+      "status": 1
+    }
+  },
+  "usdc": "0x3600000000000000000000000000000000000000"
+}
