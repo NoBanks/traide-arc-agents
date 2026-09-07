@@ -16,8 +16,10 @@ Arc testnet. Every trade is decided by data pulled from The Graph at decision
 time, recorded as a canonical keeper receipt, and anchored on Arc.
 
 The agents compose **two Graph products**: the Token API for market activity and
-a Subgraph through the decentralized network gateway for reference price. Each
-receipt records which product produced which number.
+the **official Uniswap v3 subgraph** through the decentralized network gateway for
+reference price. Each receipt records which product produced which number.
+
+Uniswap stack usage and feedback: [FEEDBACK.md](FEEDBACK.md).
 
 Built for ETHOnline 2026, Continuity track. TRAIDE is pre-existing work and this
 repo is the event work. The split is spelled out below, line by line.
@@ -31,6 +33,8 @@ be updated when the system changes, rather than being a screenshot nobody can ed
 
 | Document | What it is |
 |---|---|
+| [FEEDBACK.md](FEEDBACK.md) | Feedback to the Uniswap Foundation: what we built on the Uniswap v3 subgraph, what worked, four concrete documentation and tooling suggestions, and a v2-fork finding that breaks every fork running OpenZeppelin 5 |
+| [docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md](docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md) | Every field of the Uniswap Developer Feedback Form with drafted plain-text answers, ready to paste. Not submitted |
 | [docs/PRIZE_EVIDENCE.md](docs/PRIZE_EVIDENCE.md) | Each prize requirement quoted from the ETHOnline prizes page, mapped to a file path, address or tx hash. Includes the PRE-EXISTING versus NEW disclosure and an honest open-items list |
 | [docs/MAINNET_READY.md](docs/MAINNET_READY.md) | The config-only path to Arc mainnet, what must not change, gas budget, and a preflight checklist. States up front that nothing is verified on mainnet because mainnet is not live until Sep 16 |
 | [docs/sample_receipt_price_tier.json](docs/sample_receipt_price_tier.json) | A real decision receipt composing both Graph products, with its swap and anchor transactions |

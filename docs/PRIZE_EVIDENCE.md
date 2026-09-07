@@ -28,6 +28,7 @@ Nothing in this document is aspirational. If something is not done, it says so.
 | AGGRESSIVE | [0x5C33e8ec0087522F883a32A76D486D8ab2282701](https://testnet.arcscan.app/address/0x5C33e8ec0087522F883a32A76D486D8ab2282701) |
 | REBALANCE | [0x27e13BC4CB091E7696D66c30887E3EE85f477c3B](https://testnet.arcscan.app/address/0x27e13BC4CB091E7696D66c30887E3EE85f477c3B) |
 | Architecture diagram | [docs/architecture.png](architecture.png) |
+| Uniswap feedback | [FEEDBACK.md](../FEEDBACK.md) |
 
 Snapshot at the time of writing, all reproducible with `python3.11 -m scripts.verify`:
 
@@ -235,6 +236,77 @@ prints the Graph endpoints that actually decided the trades.
 
 ---
 
+## Uniswap Foundation: Best Uniswap Stack Contribution (Continuity), 2,000 USD, 2 winners
+
+> "Build on or integrate any part of the Uniswap stack, including the Uniswap API, the Uniswap
+> AMM (v2, v3, or v4), CCA, or any other Uniswap protocol... A public GitHub repository with
+> open-source code, a FEEDBACK.md file, and a completed submission to the Uniswap Developer
+> Feedback Form."
+
+### Scope, stated honestly first
+
+TRAIDE is an independent Uniswap-v2-**style** AMM that predates the event. It is not a deployment
+of Uniswap Labs' contracts and is not affiliated with Uniswap. **This submission does not claim
+that building TRAIDE counts as building on the Uniswap stack.** Calling an independent v2-style
+implementation "the Uniswap AMM" would be a stretch and we are not making it.
+
+The claim is narrower and unambiguous: the event work **consumes the official Uniswap v3 subgraph**
+as the agents' live price signal, with that provenance written into on-chain-anchored receipts.
+Plus a v2-fork finding reported back in `FEEDBACK.md`.
+
+| Requirement | Evidence |
+|---|---|
+| "integrate any part of the Uniswap stack" | Official Uniswap v3 subgraph, queried per decision cycle through The Graph gateway. [`arc_agents/subgraph.py`](../arc_agents/subgraph.py) |
+| "A public GitHub repository with open-source code" | https://github.com/NoBanks/traide-arc-agents, MIT, public |
+| "a FEEDBACK.md file" | [FEEDBACK.md](../FEEDBACK.md) at the repo root, linked from the README |
+| "a completed submission to the Uniswap Developer Feedback Form" | **NOT SUBMITTED.** Form verified live at https://developers.uniswap.org/hackathon-feedback (HTTP 200, 2026-09-07). Every field captured with drafted answers in [docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md](UNISWAP_FEEDBACK_FORM_ANSWERS.md). Ryan submits it in the browser |
+| Continuity pool | Disclosure at the top of this document |
+
+### Uniswap stack usage, file and line pointers
+
+| What | Where |
+|---|---|
+| Price query: `bundles { ethPriceUSD }` plus `tokenHourDatas { periodStartUnix open high low close priceUSD }` | `arc_agents/subgraph.py:101-119` (`PRICE_QUERY`) |
+| The `bundles(first: 1) { ethPriceUSD }` line | `arc_agents/subgraph.py:103` |
+| The `tokenHourDatas` selection | `arc_agents/subgraph.py:104-116` |
+| Token resolution by symbol, ordered by `volumeUSD` | `arc_agents/subgraph.py:89-99` (`TOKEN_QUERY`) |
+| Candidate subgraph ids and their sources | `arc_agents/subgraph.py:70-79` (`CANDIDATE_SUBGRAPHS`) |
+| Resolver that validates with the real query, not `_meta` | `arc_agents/subgraph.py:251-296` (`resolve`) |
+| Impostor-token guard: highest `volumeUSD` whose name matches | `arc_agents/subgraph.py:315-330` (`_adopt_token`) |
+| Gateway POST, provenance record, bearer auth so the key never enters a URL | `arc_agents/subgraph.py:122-199` (`_post`) |
+| Guard for HTTP-200-with-GraphQL-error auth failures | `arc_agents/subgraph.py:201-210` (`auth_error`) |
+| Timeout raised to 60s after measuring a 10.9s token scan | `arc_agents/subgraph.py:64` (`SUBGRAPH_TIMEOUT_SECONDS`) |
+| Close series extracted, newest-last | `arc_agents/subgraph.py:332-380` (`price_series`) |
+| Where the Uniswap price enters the Graph signal | `arc_agents/graph.py:364-371` |
+| Price tier declared live | `arc_agents/graph.py:398` |
+| Where the price drives a decision | `arc_agents/agents.py:93-101` (`decide`), `arc_agents/agents.py:185+` (`_rebalance`) |
+| Price threshold | `arc_agents/agents.py:42` (`PRICE_MOVE`) |
+
+### Load-bearing, demonstrated rather than asserted
+
+REBALANCE's entire strategy is a target allocation by value, so without a Uniswap price it cannot
+compute a target and refuses to trade. In the committed ledger it held on **15 consecutive
+cycles** while the price tier was down, then traded on the first cycle that carried a price.
+
+| Item | Value |
+|---|---|
+| First Uniswap-price-driven trade | [0x92ee6657...](https://testnet.arcscan.app/tx/0x92ee66575f8700dc46f156b9041a8d6cef80d8ec78f2d0af1b38b54a562d1b09), status 1, block 60969449 |
+| Decision reason | "LINK share 0.190, target 0.406 from the Graph price tier (-1.87 percent), drift -0.216" |
+| Receipt sha256 | `2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee` |
+| Anchor tx | [0x0311a0f9...](https://testnet.arcscan.app/tx/0x0311a0f9e7b1fc78a31cac92ce0b372718c0736f622a42eeb9b6a5b6312e54d3) |
+| Receipt carrying the Uniswap subgraph provenance | [docs/sample_receipt_price_tier.json](sample_receipt_price_tier.json) |
+
+### The contribution back to the ecosystem
+
+Taking a v2-style fork past deployment into a funded pair surfaced a real hazard for every v2 fork
+on modern OpenZeppelin: `UniswapV2Pair`'s `_mint(address(0), MINIMUM_LIQUIDITY)` reverts under
+OpenZeppelin 5, whose `ERC20._mint` rejects the zero address with `ERC20InvalidReceiver`. Deploy,
+pair creation and verification all succeed; it only fires on the **first** `addLiquidity`, so a
+fork can ship to many chains and look healthy until someone funds a pool. Evidence, suggested
+docs fix, and three further subgraph findings are written up in [FEEDBACK.md](../FEEDBACK.md).
+
+---
+
 ## Open items
 
 Honest list, so nothing here reads better than it is.
@@ -243,11 +315,16 @@ Honest list, so nothing here reads better than it is.
    anything under 2 or over 4 minutes. Any render must be 24fps.
 2. **Continuity registration and the written pre-existing-work disclosure. NOT CONFIRMED.**
    Ryan's action. Track C names it as an explicit requirement.
-3. **Prize selection.** The form allows up to 3 partner prizes. The three mapped here are the
-   intended picks and this document is the argument for each.
-4. **Arc mainnet.** Not deployed, correctly, and not claimed. See
+3. **Prize selection.** The form allows up to 3 partner prizes, and all three are now chosen:
+   Arc Track C, Arc Track E, The Graph AI Continuity, plus Uniswap Foundation Continuity mapped
+   above. This document is the argument for each.
+4. **Uniswap Developer Feedback Form. NOT SUBMITTED.** Required by the Uniswap prize line.
+   Answers drafted in [docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md](UNISWAP_FEEDBACK_FORM_ANSWERS.md);
+   Ryan submits it in the browser. Note the five dropdowns are JavaScript-populated, so their
+   exact options must be read on the page rather than guessed.
+5. **Arc mainnet.** Not deployed, correctly, and not claimed. See
    [docs/MAINNET_READY.md](MAINNET_READY.md).
-5. **P and L is negative**, roughly 0.03 USDC per trading agent against holding, which is the 0.3
+6. **P and L is negative**, roughly 0.03 USDC per trading agent against holding, which is the 0.3
    percent AMM fee plus slippage on small swaps. It is on the dashboard as measured rather than
    hidden. These agents are a provenance demonstration, not a profitable strategy, and the repo
    does not claim otherwise.
