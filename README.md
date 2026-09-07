@@ -24,6 +24,18 @@ repo is the event work. The split is spelled out below, line by line.
 
 ![architecture](docs/architecture.png)
 
+*Regenerate with `python3.11 -m scripts.make_architecture_png`. It is drawn from code so it can
+be updated when the system changes, rather than being a screenshot nobody can edit.*
+
+## Documents
+
+| Document | What it is |
+|---|---|
+| [docs/PRIZE_EVIDENCE.md](docs/PRIZE_EVIDENCE.md) | Each prize requirement quoted from the ETHOnline prizes page, mapped to a file path, address or tx hash. Includes the PRE-EXISTING versus NEW disclosure and an honest open-items list |
+| [docs/MAINNET_READY.md](docs/MAINNET_READY.md) | The config-only path to Arc mainnet, what must not change, gas budget, and a preflight checklist. States up front that nothing is verified on mainnet because mainnet is not live until Sep 16 |
+| [docs/sample_receipt_price_tier.json](docs/sample_receipt_price_tier.json) | A real decision receipt composing both Graph products, with its swap and anchor transactions |
+| [docs/graph_activity_baseline.json](docs/graph_activity_baseline.json) | The raw measurement windows behind the activity signal's calibration constant |
+
 ## The one rule that matters
 
 The Graph is load bearing. If the Graph call fails, the agents do not trade. They
