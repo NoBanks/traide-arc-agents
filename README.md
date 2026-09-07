@@ -227,14 +227,28 @@ pm2 logs arc-agents-runner --lines 50 --nostream
 
 ## Verifying the receipts yourself
 
+One command, no need to trust the dashboard or this README:
+
 ```bash
-curl -s http://127.0.0.1:17360/api/verify
+$ python3.11 -m scripts.verify
+[PASS] ledger: 24 receipts, 0 hash mismatches, 0 chain breaks
+[PASS] swaps: 10 refetched from Arc, 0 not status 1
+[PASS] anchors: 10 anchored, contract total() 10, 0 hashes absent on chain
+[PASS] graph: 0 receipts with a tier but no provenance, 0 swaps made without a Graph tier
+
+Graph endpoints that actually decided these trades:
+  https://api.pinax.network/v1/evm/dexes
+ALL CHECKS PASSED
 ```
 
-That recomputes every receipt hash from its own canonical bytes and walks the
-prev-hash chain. To check an anchor independently, call `attestedAt(bytes32)` on
-the anchor contract with the receipt hash from the ledger; a nonzero result is
-the block timestamp at which that exact receipt was first anchored on Arc.
+It recomputes every receipt hash from its own canonical bytes, walks the
+prev-hash chain, refetches every swap transaction from Arc and requires status 1,
+calls `attestedAt(bytes32)` on the anchor contract for every anchored hash and
+requires a nonzero first-seen timestamp, and confirms no swap was ever made
+without a usable Graph tier.
+
+The dashboard exposes the first check on its own at
+`curl -s http://127.0.0.1:17360/api/verify`.
 
 ## Deployment ready on Arc mainnet
 

@@ -102,6 +102,7 @@ def run_cycle(
         "amm": config.TRAIDE_AMM,
         "link_per_usdc": client.pool_price_link_per_usdc(),
     }
+    state["graph_activity_carry"] = graph_client.export_activity()
     state["graph"] = {
         "tier": signal.tier,
         "activity_score": signal.activity_score,
@@ -202,6 +203,11 @@ def main(argv: list[str] | None = None) -> int:
     graph_client = GraphClient()
     wallets = derive_agents()
     state = _load_state()
+
+    # Carry the last activity reading across the restart so the first cycle is
+    # not wasted priming. Anything older than three intervals is discarded.
+    if graph_client.restore_activity(state.get("graph_activity_carry"), args.interval * 3):
+        log("restored the previous activity reading, no priming cycle needed")
 
     log(f"chain {client.chain_id}, AMM {config.TRAIDE_AMM}, anchor {anchor.anchor_address() or 'not deployed'}")
     for w in wallets:

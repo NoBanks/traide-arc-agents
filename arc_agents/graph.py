@@ -288,6 +288,28 @@ class GraphClient:
         self._prev_activity: tuple[int, int, float] | None = None
         self._pool: str = ""
 
+    # The activity signal is a rate, so it needs a previous reading. Without one
+    # the first cycle after every restart is wasted. These two methods let the
+    # runner carry the last reading across a restart through state.json, with a
+    # staleness guard so a long outage cannot produce a diluted rate.
+    def export_activity(self) -> dict[str, Any] | None:
+        if self._prev_activity is None:
+            return None
+        tx, uaw, t = self._prev_activity
+        return {"transactions": tx, "uaw": uaw, "at": t}
+
+    def restore_activity(self, saved: dict[str, Any] | None, max_age_seconds: float) -> bool:
+        if not saved:
+            return False
+        try:
+            at = float(saved["at"])
+            if time.time() - at > max_age_seconds:
+                return False
+            self._prev_activity = (int(saved["transactions"]), int(saved["uaw"]), at)
+            return True
+        except (KeyError, TypeError, ValueError):
+            return False
+
     def signal(self) -> GraphSignal:
         """
         Build this cycle's decision input from live Graph data.
