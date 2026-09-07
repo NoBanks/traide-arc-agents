@@ -186,7 +186,49 @@ Either way, there is no keyless route to a reference price. That is why the
 REBALANCE agent, whose whole strategy is a value split and therefore needs a
 price, stands down until the price tier is live. One agent that literally cannot
 act without The Graph is the clearest demonstration of load-bearing this repo can
-offer.
+offer, and it is visible in the ledger: REBALANCE held on every cycle until the
+gateway key worked, then traded on the first cycle that carried a price.
+
+#### Live, verified 2026-09-07
+
+```
+subgraph tier: resolved 5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV
+subgraph tier: reference token LINK (ChainLink Token) resolved by symbol from
+               live data, address 0x514910771af9ca656af840dff83e8264ecf986ca
+subgraph tier: 24 hourly closes, ETH reference 2490.675326884083227389169746640452
+price tier live from subgraph 5zvR82QoaXYF.. via gateway, 24 closes
+composed two Graph products: thegraph-subgraph-gateway, thegraph-token-api
+REBALANCE: BUY_LINK - LINK share 0.190, target 0.406 from the Graph price tier
+           (-1.87 percent), drift -0.216
+```
+
+REBALANCE's first real trade, both legs checkable on chain:
+
+| Item | Value |
+|---|---|
+| Swap tx | [0x92ee6657...](https://testnet.arcscan.app/tx/0x92ee66575f8700dc46f156b9041a8d6cef80d8ec78f2d0af1b38b54a562d1b09) status 1, block 60969449 |
+| Receipt sha256 | `2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee` |
+| Anchor tx | [0x0311a0f9...](https://testnet.arcscan.app/tx/0x0311a0f9e7b1fc78a31cac92ce0b372718c0736f622a42eeb9b6a5b6312e54d3) |
+| `attestedAt` | 1788815904, nonzero, so the hash is on chain |
+
+The full receipt, with both products' provenance, is committed at
+`docs/sample_receipt_price_tier.json`. The API key appears nowhere in it.
+
+#### Three things probing the live gateway taught us
+
+Recorded because anyone reimplementing this will hit them:
+
+1. **The token scan is slow.** Ordering every token by `volumeUSD` measured
+   **10.9 seconds** against a cold gateway. At a 15 second budget that surfaced
+   as a phantom "no token with symbol LINK". Subgraph calls get 60 seconds.
+2. **`_meta` is not a compatibility test.** Candidate `A3Np3RQb..` answers
+   `_meta` happily and then fails the real query with
+   ``Type `Token` has no field `volumeUSD` ``. The resolver therefore probes with
+   the query it actually depends on, so a wrong-schema deployment is rejected
+   rather than selected and failed later.
+3. **A dead subgraph id returns HTTP 200.** Two candidates answer
+   `{"errors":[{"message":"subgraph not found: ..."}]}` with a 200. Same lesson
+   as the auth error: never trust the status code alone.
 
 ### Provenance in every receipt
 
