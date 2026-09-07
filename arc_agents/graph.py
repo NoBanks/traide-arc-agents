@@ -58,6 +58,12 @@ NO_KEY_MESSAGE = "[GRAPH] no API key, not trading"
 # docs/graph_activity_baseline.json. This number is a measurement, not a guess.
 BASE_ACTIVITY_TX_PER_SECOND = 9.64
 
+# Shortest window that yields a meaningful rate. Below this the count difference
+# is dominated by indexer lag rather than by market activity, so the client
+# refuses to produce a score and the agents hold. The calibration windows were
+# 60 seconds each, so 45 is a conservative floor under them.
+MIN_ACTIVITY_WINDOW_SECONDS = 45.0
+
 
 @dataclass
 class GraphCall:
@@ -355,9 +361,9 @@ class GraphClient:
             if dex_call.ok and rows:
                 tx, uaw = _activity_total(rows)
                 now = time.time()
-                if self._prev_activity is not None:
+                if self._prev_activity is not None and (now - self._prev_activity[2]) >= MIN_ACTIVITY_WINDOW_SECONDS:
                     ptx, puaw, pt = self._prev_activity
-                    elapsed = max(now - pt, 1.0)
+                    elapsed = now - pt
                     tx_rate = (tx - ptx) / elapsed
                     uaw_delta = uaw - puaw
                     # Momentum, not level: how far the live transaction rate sits
@@ -372,8 +378,14 @@ class GraphClient:
                             f"activity tier: {len(rows)} factories on "
                             f"{config.GRAPH_NETWORK}, {tx_rate:.1f} tx/s"
                         )
-                else:
+                elif self._prev_activity is None:
                     sig.notes.append("activity tier priming, no previous poll to diff")
+                else:
+                    sig.notes.append(
+                        f"activity tier window too short "
+                        f"({now - self._prev_activity[2]:.0f}s < {MIN_ACTIVITY_WINDOW_SECONDS}s), "
+                        "rate would be noise, not trading"
+                    )
                 self._prev_activity = (tx, uaw, now)
             else:
                 sig.notes.append("activity tier call failed")
