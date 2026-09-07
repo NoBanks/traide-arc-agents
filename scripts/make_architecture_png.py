@@ -72,11 +72,11 @@ def main() -> int:
             color=DIM, fontsize=9.4, va="top")
 
     # The Graph column
-    box(ax, 0.35, 5.15, 3.5, 1.85, "THE GRAPH  (load bearing)",
-        ["Token API, api.pinax.network",
-         "GET /v1/evm/dexes      keyless",
-         "GET /v1/evm/pools      bearer",
-         "GET /v1/evm/pools/ohlc bearer",
+    box(ax, 0.35, 5.15, 3.5, 1.85, "THE GRAPH  (two products)",
+        ["1 Token API, api.pinax.network",
+         "  /v1/evm/dexes     keyless",
+         "2 Subgraph, gateway.thegraph.com",
+         "  tokenHourDatas    studio key",
          "live at query time, never cached"], GRAPH_C)
 
     box(ax, 0.35, 3.55, 3.5, 1.25, "GUARD",

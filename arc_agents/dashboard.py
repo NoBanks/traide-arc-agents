@@ -142,15 +142,33 @@ def index() -> HTMLResponse:
     pool = state.get("pool", {}).get("reserves", {})
     anchor = anchor_address()
 
-    key_set = bool(config.graph_api_key())
+    # The banner must describe the ACTUAL state, not just whether a key string
+    # exists. A key that is set but refused by the gateway is a different problem
+    # with a different fix, and saying "not set" would send the reader the wrong way.
+    key_set = bool(config.graph_api_key() or config.graph_gateway_api_key())
+    price_live = g.get("price") is not None
+    price_reason = ""
+    for note in g.get("notes", []):
+        if note.startswith("[GRAPH] price tier unavailable"):
+            price_reason = note
+            break
+
     banner = ""
-    if not key_set:
+    if not price_live:
+        if not key_set:
+            detail = (
+                "No Graph credential is set. Neither GRAPH_API_KEY (Token API JWT) "
+                "nor GRAPH_GATEWAY_API_KEY (Subgraph Studio query key) is present."
+            )
+        else:
+            detail = html.escape(price_reason) if price_reason else (
+                "A Graph credential is set but the price tier returned no usable series."
+            )
         banner = (
-            '<div class="note"><strong>GRAPH_API_KEY is not set.</strong> The authenticated '
-            "price tier is unavailable, so REBALANCE refuses to trade and logs "
-            "<span class='mono'>[GRAPH] no API key, not trading</span>. PASSIVE and AGGRESSIVE "
-            "run on the keyless live Token API activity tier. No other data source is used "
-            "anywhere in this program.</div>"
+            '<div class="note"><strong>Price tier is down, so REBALANCE is not trading.</strong> '
+            + detail
+            + " PASSIVE and AGGRESSIVE continue on the keyless Token API activity tier. "
+            "No data source outside The Graph is used anywhere in this program.</div>"
         )
 
     cards = []
@@ -215,7 +233,8 @@ data from The Graph and recorded as a keeper receipt anchored on chain.</p>
 <div class="kv"><span>activity score</span><span class="mono">{g.get('activity_score') if g.get('activity_score') is not None else '-'}</span></div>
 <div class="kv"><span>reference price</span><span class="mono">{g.get('price') if g.get('price') is not None else '-'}</span></div>
 <div class="kv"><span>price change</span><span class="mono">{g.get('price_change') if g.get('price_change') is not None else '-'}</span></div>
-<div class="kv"><span>key configured</span><span class="mono">{'yes' if key_set else 'no'}</span></div>
+<div class="kv"><span>credential set</span><span class="mono">{'yes' if key_set else 'no'}</span></div>
+<div class="kv"><span>graph products</span><span class="mono">{html.escape(', '.join(state.get('graph', {}).get('products', [])) or 'none this cycle')}</span></div>
 </div>
 <div class="card"><h3>Pool, TRAIDEAMM</h3>
 <div class="kv"><span>USDC reserve</span><span class="mono">{_fmt_usdc(pool.get('usdc_units_6'))}</span></div>

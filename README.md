@@ -9,9 +9,15 @@ the demo path.
 
 # traide-arc-agents
 
+**Live demo: https://arc-agents.nohumannearby.com**
+
 Three autonomous agents, each with its own funded wallet, trading a real pair on
 Arc testnet. Every trade is decided by data pulled from The Graph at decision
 time, recorded as a canonical keeper receipt, and anchored on Arc.
+
+The agents compose **two Graph products**: the Token API for market activity and
+a Subgraph through the decentralized network gateway for reference price. Each
+receipt records which product produced which number.
 
 Built for ETHOnline 2026, Continuity track. TRAIDE is pre-existing work and this
 repo is the event work. The split is spelled out below, line by line.
@@ -102,33 +108,85 @@ across the three windows, mean 9.64. The raw windows are committed at
 `docs/graph_activity_baseline.json` and the constant lives at
 `graph.BASE_ACTIVITY_TX_PER_SECOND`.
 
-### Tier 2, price. Requires GRAPH_API_KEY.
+### Tier 2, price. A Subgraph through the decentralized network gateway.
+
+This is the second Graph product, and it needs a **Subgraph Studio query API
+key** in `GRAPH_GATEWAY_API_KEY`.
 
 ```
-GET https://api.pinax.network/v1/evm/pools?network=base&factory=<factory>&limit=10
-GET https://api.pinax.network/v1/evm/pools/ohlc?network=base&pool=<pool>&interval=1h&limit=24
-Authorization: Bearer <GRAPH_API_KEY>
+POST https://gateway.thegraph.com/api/subgraphs/id/<SUBGRAPH_ID>
+Authorization: Bearer <GRAPH_GATEWAY_API_KEY>
+Content-Type: application/json
 ```
 
-All three of `/v1/evm/pools`, `/v1/evm/pools/ohlc` and `/v1/evm/swaps` carry
-`security: [{bearerAuth: []}]` in the spec, and an unauthenticated call is
-refused:
+The documented path form `https://gateway.thegraph.com/api/<API_KEY>/subgraphs/id/<ID>`
+works too. This repo sends the bearer form so the key never appears in a URL and
+therefore never lands in a log line or a receipt.
+
+The query, run once per cycle:
+
+```graphql
+query ReferencePrice($tid: String!, $n: Int!) {
+  bundles(first: 1) { ethPriceUSD }
+  tokenHourDatas(
+    where: {token: $tid}
+    orderBy: periodStartUnix
+    orderDirection: desc
+    first: $n
+  ) { periodStartUnix open high low close priceUSD }
+  _meta { block { number } hasIndexingErrors }
+}
+```
+
+Every field was verified against the authoritative Uniswap v3 schema at
+`github.com/Uniswap/v3-subgraph` (branch `dev`, `schema.graphql`, fetched
+2026-09-07): `Bundle.ethPriceUSD`, `TokenHourData.periodStartUnix/open/high/low/close/priceUSD`
+and `Token.id/symbol/name/derivedETH/volumeUSD` all exist as used.
+
+Neither the subgraph nor the reference token is hardcoded to a guess:
+
+- The **subgraph id** is resolved by probing a list of candidates, each sourced
+  from a Graph Explorer subgraph page or Uniswap's developer docs, and keeping
+  the first that answers with data. Pin one with `GRAPH_SUBGRAPH_ID`.
+- The **reference token** is resolved *by symbol* from live subgraph data
+  (`tokens(where: {symbol: "LINK"}, orderBy: volumeUSD, orderDirection: desc)`),
+  preferring the highest-volume match whose name looks like Chainlink. No token
+  contract address is written into this repo, so no address in it can be wrong.
+
+Two transport facts learned by probing the live gateway, both worth knowing
+before anyone reimplements this:
+
+1. A request without a browser-shaped `User-Agent` is refused by Cloudflare with
+   `error code: 1010` before it ever reaches The Graph. Python's `urllib`
+   default triggers this. The client always sends an explicit one.
+2. A key the gateway does not recognize comes back **HTTP 200** with a GraphQL
+   error body, not a 401:
+   `{"errors":[{"message":"auth error: API key not found"}]}`. So status code
+   alone is not a success test, and the guard inspects the body.
+
+#### Why not the Token API for price
+
+The Token API's price endpoints (`/v1/evm/pools`, `/v1/evm/pools/ohlc`,
+`/v1/evm/swaps`) all carry `security: [{bearerAuth: []}]` and refuse an
+unauthenticated call:
 
 ```
 $ curl -s "https://api.pinax.network/v1/evm/pools?network=base&limit=1"
 {"error":{"status":401,"code":"unauthorized"}}
 ```
 
-So there is no keyless route to reference prices. That is why the REBALANCE
-agent, whose whole strategy is a value split and therefore needs a price, stands
-down and logs `[GRAPH] no API key, not trading` until the key is set. One agent
-that literally cannot act without The Graph is the clearest demonstration of
-load-bearing this repo can offer.
+They also refuse a Subgraph Studio key, verified 2026-09-07, because the Token
+API is a separate service wanting a Pinax-issued JWT: `token-api.thegraph.com`
+resolves as a CNAME to `token-api.service.pinax.network`. So with a Studio key in
+hand, the honest route to a price is a subgraph. If a Pinax JWT is ever set in
+`GRAPH_API_KEY` as well, the client will use the Token API price endpoints as a
+second route automatically.
 
-The reference pool is not hardcoded. It is derived at runtime: the keyless dexes
-call names the busiest Uniswap v3 factory on the reference network, and the pools
-call enumerates that factory's pools. An operator can pin one with
-`GRAPH_REFERENCE_POOL`.
+Either way, there is no keyless route to a reference price. That is why the
+REBALANCE agent, whose whole strategy is a value split and therefore needs a
+price, stands down until the price tier is live. One agent that literally cannot
+act without The Graph is the clearest demonstration of load-bearing this repo can
+offer.
 
 ### Provenance in every receipt
 
@@ -149,7 +207,7 @@ at `data/receipts.jsonl` and is served at `/api/receipts`.
 |---|---|---|---|
 | PASSIVE | `m/44'/60'/0'/0/1` | Contrarian. Buys weakness, sells strength, always the smallest size. | activity or price |
 | AGGRESSIVE | `m/44'/60'/0'/0/2` | Trend follower. Size scales with signal strength. | activity or price |
-| REBALANCE | `m/44'/60'/0'/0/3` | Holds a target split by pool value, leaning with the reference price. | price only, so it is flat without the key |
+| REBALANCE | `m/44'/60'/0'/0/3` | Holds a target split by pool value, leaning with the reference price. | price only, so it is flat until the Subgraph tier is live |
 
 Wallets are BIP-44 children of one BIP-39 mnemonic held only in the gitignored
 dotenv file. The paths are public because a path is not a secret; the mnemonic
@@ -216,6 +274,10 @@ python3.11 -m arc_agents.runner                    # forever
 
 python3.11 -m arc_agents.dashboard   # http://127.0.0.1:17360/
 ```
+
+The dashboard is published at **https://arc-agents.nohumannearby.com** through a
+Cloudflare tunnel (PM2 app `traide-arc-agents-tunnel`). It is read only and
+serves free routes only.
 
 Unattended, under PM2, with the crash-loop guards this house requires
 (`max_restarts`, `min_uptime`, exponential backoff, logs in `~/.pm2/logs`):

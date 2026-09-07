@@ -82,6 +82,7 @@ GRAPH_REFERENCE_PROTOCOL = "uniswap_v3"
 GRAPH_OHLC_INTERVAL = "1h"
 GRAPH_OHLC_LIMIT = 24
 GRAPH_POOL_CACHE_PATH = DATA_DIR / "graph_reference_pool.json"
+SUBGRAPH_CACHE_PATH = DATA_DIR / "graph_subgraph_target.json"
 
 GRAPH_TIMEOUT_SECONDS = 15
 
@@ -135,6 +136,11 @@ def graph_gateway_api_key() -> str:
 
 def graph_reference_pool_override() -> str:
     return os.environ.get("GRAPH_REFERENCE_POOL", "").strip().lower()
+
+
+def subgraph_id_override() -> str:
+    """Pin a specific subgraph instead of letting the resolver probe candidates."""
+    return os.environ.get("GRAPH_SUBGRAPH_ID", "").strip()
 
 
 def graph_allow_keyless() -> bool:

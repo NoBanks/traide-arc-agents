@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from . import config
-from .graph import GraphSignal, NO_KEY_MESSAGE
+from .graph import GraphSignal, NO_KEY_MESSAGE, PRICE_UNAVAILABLE_OTHER
 
 Action = Literal["BUY_LINK", "SELL_LINK", "HOLD"]
 
@@ -91,9 +91,12 @@ def decide(
 
     if agent == "REBALANCE":
         if not signal.has_price:
+            # Say exactly what is missing. The old line said "no API key" even
+            # when a key was present and the gateway had refused it, which is a
+            # different problem with a different fix.
             return _hold(
-                "REBALANCE requires the authenticated Graph price tier; "
-                + (NO_KEY_MESSAGE if not signal.price else "price tier unavailable")
+                "REBALANCE requires the Graph price tier. "
+                + (signal.price_unavailable_reason or PRICE_UNAVAILABLE_OTHER)
             )
         return _rebalance(usdc, link, spendable_usdc, reserves, change or 0.0)
 

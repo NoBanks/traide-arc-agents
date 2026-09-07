@@ -14,7 +14,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from arc_agents import agents, receipts  # noqa: E402
-from arc_agents.graph import GraphSignal, NO_KEY_MESSAGE  # noqa: E402
+from arc_agents.graph import (  # noqa: E402
+    GraphSignal,
+    NO_KEY_MESSAGE,
+    PRICE_UNAVAILABLE_KEY_REJECTED,
+    PRICE_UNAVAILABLE_NO_KEY,
+)
 
 BALANCES = {"usdc_units_6": 1_000_000, "link_wei_18": 2_000 * 10**18, "native_wei_18": 10**18}
 RESERVES = {"usdc_units_6": 2_000_000, "link_wei_18": 16_534 * 10**18}
@@ -31,11 +36,42 @@ def test_no_graph_signal_means_no_trade():
 
 
 def test_rebalance_refuses_without_the_price_tier():
-    """REBALANCE cannot act on the keyless tier alone."""
-    signal = GraphSignal(tier="activity", activity_score=0.9, notes=[NO_KEY_MESSAGE])
+    """REBALANCE cannot act on the keyless activity tier alone."""
+    signal = GraphSignal(tier="activity", activity_score=0.9)
     d = agents.decide("REBALANCE", signal, BALANCES, RESERVES)
     assert d.action == "HOLD"
-    assert NO_KEY_MESSAGE in d.reason
+    assert "price tier" in d.reason
+
+
+def test_rebalance_reason_names_the_actual_cause():
+    """
+    Regression guard. The refusal line used to say "no API key" even when a key
+    was present and the gateway had refused it, which points at the wrong fix.
+    Whatever the Graph client determined must reach the log verbatim.
+    """
+    rejected = GraphSignal(
+        tier="activity", activity_score=0.9,
+        price_unavailable_reason=PRICE_UNAVAILABLE_KEY_REJECTED,
+    )
+    d = agents.decide("REBALANCE", rejected, BALANCES, RESERVES)
+    assert d.action == "HOLD"
+    assert "rejected the key" in d.reason
+    assert NO_KEY_MESSAGE not in d.reason
+
+    absent = GraphSignal(
+        tier="activity", activity_score=0.9,
+        price_unavailable_reason=PRICE_UNAVAILABLE_NO_KEY,
+    )
+    d2 = agents.decide("REBALANCE", absent, BALANCES, RESERVES)
+    assert "no credential set" in d2.reason
+
+
+def test_rebalance_trades_once_the_price_tier_is_live():
+    """The moment a price arrives, REBALANCE acts. It is underweight LINK here."""
+    live = GraphSignal(tier="price", activity_score=0.0, price=23.5, price_change=0.01)
+    d = agents.decide("REBALANCE", live, BALANCES, RESERVES)
+    assert d.action == "BUY_LINK"
+    assert d.size_usdc_units > 0
 
 
 def test_activity_tier_drives_opposite_sides():

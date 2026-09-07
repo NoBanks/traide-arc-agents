@@ -109,6 +109,8 @@ def run_cycle(
         "price": signal.price,
         "price_change": signal.price_change,
         "notes": signal.notes,
+        "products": signal.products,
+        "price_unavailable_reason": signal.price_unavailable_reason,
         "last_calls": signal.provenance(),
     }
 
@@ -212,8 +214,8 @@ def main(argv: list[str] | None = None) -> int:
     log(f"chain {client.chain_id}, AMM {config.TRAIDE_AMM}, anchor {anchor.anchor_address() or 'not deployed'}")
     for w in wallets:
         log(f"agent {w.name} {w.address} ({w.derivation_path})")
-    if not config.graph_api_key():
-        log(f"WARNING {agents.NO_KEY_MESSAGE if hasattr(agents, 'NO_KEY_MESSAGE') else '[GRAPH] no API key, not trading'} on the price tier")
+    if not config.graph_api_key() and not config.graph_gateway_api_key():
+        log("WARNING no Graph credential set, the price tier cannot run and REBALANCE will hold")
 
     limit = 1 if args.once else args.cycles
     n = 0

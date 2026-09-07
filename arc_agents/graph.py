@@ -48,8 +48,23 @@ from dataclasses import dataclass, field, asdict
 from typing import Any
 
 from . import config
+from .subgraph import SubgraphPriceClient
 
 NO_KEY_MESSAGE = "[GRAPH] no API key, not trading"
+
+# Precise refusal messages. The old code collapsed every price-tier failure into
+# NO_KEY_MESSAGE, which became a lie the moment a key existed but was rejected.
+# Each of these says exactly which credential is missing or refused.
+PRICE_UNAVAILABLE_NO_KEY = (
+    "[GRAPH] price tier unavailable: no credential set, neither GRAPH_API_KEY "
+    "(Token API JWT) nor GRAPH_GATEWAY_API_KEY (Subgraph Studio query key)"
+)
+PRICE_UNAVAILABLE_KEY_REJECTED = (
+    "[GRAPH] price tier unavailable: the Subgraph gateway rejected the key "
+    "(auth error: API key not found). A Studio DEPLOY key cannot query; create a "
+    "query API key under the Studio API Keys tab"
+)
+PRICE_UNAVAILABLE_OTHER = "[GRAPH] price tier unavailable: no usable price series this cycle"
 
 # Steady-state DEX transaction rate on the reference network, summed across the
 # factories the keyless dexes endpoint reports. Measured on 2026-09-07 with four
@@ -69,6 +84,7 @@ MIN_ACTIVITY_WINDOW_SECONDS = 45.0
 class GraphCall:
     """One HTTP call to a Graph provider, with everything a verifier needs."""
 
+    product: str
     provider: str
     endpoint: str
     params: dict[str, Any]
@@ -103,7 +119,10 @@ class GraphSignal:
     price: float | None = None
     price_change: float | None = None
     calls: list[GraphCall] = field(default_factory=list)
+    raw_calls: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    price_unavailable_reason: str = ""
+    products: list[str] = field(default_factory=list)
 
     @property
     def usable(self) -> bool:
@@ -114,7 +133,8 @@ class GraphSignal:
         return self.price is not None and self.price_change is not None
 
     def provenance(self) -> list[dict[str, Any]]:
-        return [c.provenance() for c in self.calls]
+        """Every Graph call this cycle, across BOTH products, in one list."""
+        return [c.provenance() for c in self.calls] + list(self.raw_calls)
 
 
 def _get(
@@ -151,6 +171,7 @@ def _get(
         error = f"{type(exc).__name__}"
 
     call = GraphCall(
+        product="thegraph-token-api",
         provider=provider,
         endpoint=f"{base}{path}",
         params=dict(params),
@@ -293,6 +314,7 @@ class GraphClient:
     def __init__(self) -> None:
         self._prev_activity: tuple[int, int, float] | None = None
         self._pool: str = ""
+        self._subgraph = SubgraphPriceClient()
 
     # The activity signal is a rate, so it needs a previous reading. Without one
     # the first cycle after every restart is wasted. These two methods let the
@@ -326,32 +348,65 @@ class GraphClient:
         api_key = config.graph_api_key()
         sig = GraphSignal(tier="none")
 
-        # PRICE tier first when a key is present. It supersedes activity.
-        if api_key:
+        # PRICE tier. Two possible routes, tried in the order of the credential
+        # we actually hold. Whichever answers, the tier is "price" and it
+        # supersedes activity for direction.
+        token_key = config.graph_api_key()
+        gateway_key = config.graph_gateway_api_key()
+
+        closes: list[float] = []
+        price_source = ""
+
+        # Route A: Subgraph, through The Graph's decentralized network gateway,
+        # with a Subgraph Studio query API key. This is the route Ryan's key is
+        # for. Fields verified against the Uniswap v3 schema.
+        if gateway_key:
+            sub_calls, closes, sub_notes = self._subgraph.price_series(gateway_key)
+            sig.raw_calls.extend(sub_calls)
+            sig.notes.extend(sub_notes)
+            if closes:
+                price_source = (
+                    f"subgraph {self._subgraph.subgraph_id} via gateway, "
+                    f"{self._subgraph.token_label}"
+                )
+
+        # Route B: Token API price endpoints, which need a Pinax-issued JWT.
+        # Only attempted when a distinct Token API credential is configured, so
+        # a Studio key is never fired at an endpoint that will refuse it twice.
+        if not closes and token_key and token_key != gateway_key:
             if not self._pool:
-                calls, pool = discover_reference_pool(api_key)
-                sig.calls.extend(calls)
+                pool_calls, pool = discover_reference_pool(token_key)
+                sig.calls.extend(pool_calls)
                 self._pool = pool
             if self._pool:
-                ohlc_call, rows = fetch_pool_ohlc(api_key, self._pool)
+                ohlc_call, rows = fetch_pool_ohlc(token_key, self._pool)
                 sig.calls.append(ohlc_call)
-                closes = _close_series(rows)
-                if ohlc_call.ok and len(closes) >= 2:
-                    first, last = closes[0], closes[-1]
-                    if first:
-                        sig.price = last
-                        sig.price_change = (last - first) / first
-                        sig.tier = "price"
-                        sig.notes.append(
-                            f"reference pool {self._pool} on {config.GRAPH_NETWORK}, "
-                            f"{len(closes)} {config.GRAPH_OHLC_INTERVAL} closes"
-                        )
+                if ohlc_call.ok:
+                    closes = _close_series(rows)
+                    if closes:
+                        price_source = f"Token API pool {self._pool} on {config.GRAPH_NETWORK}"
                 else:
-                    sig.notes.append("price tier returned no usable OHLC series")
+                    sig.notes.append("price tier: Token API OHLC call failed")
             else:
-                sig.notes.append("price tier could not resolve a reference pool")
+                sig.notes.append("price tier: Token API could not resolve a reference pool")
+
+        if len(closes) >= 2 and closes[0]:
+            first, last = closes[0], closes[-1]
+            sig.price = last
+            sig.price_change = (last - first) / first
+            sig.tier = "price"
+            sig.notes.append(f"price tier live from {price_source}, {len(closes)} closes")
         else:
-            sig.notes.append(NO_KEY_MESSAGE)
+            # Say exactly what is missing. Never claim "no API key" when a key
+            # exists and was refused, and never claim a refusal when the real
+            # cause was an empty series.
+            if not token_key and not gateway_key:
+                sig.price_unavailable_reason = PRICE_UNAVAILABLE_NO_KEY
+            elif self._subgraph.auth_rejected:
+                sig.price_unavailable_reason = PRICE_UNAVAILABLE_KEY_REJECTED
+            else:
+                sig.price_unavailable_reason = PRICE_UNAVAILABLE_OTHER
+            sig.notes.append(sig.price_unavailable_reason)
 
         # ACTIVITY tier. Keyless, verified live. Always fetched, because even in
         # the price tier the activity delta sizes the trade.
@@ -391,5 +446,12 @@ class GraphClient:
                 sig.notes.append("activity tier call failed")
         else:
             sig.notes.append("keyless activity tier disabled by GRAPH_ALLOW_KEYLESS=0")
+
+        # Which Graph products actually contributed this cycle. Two distinct
+        # products answering in the same cycle is the composition claim, and it
+        # is recorded per decision rather than asserted in a README.
+        sig.products = sorted({c["product"] for c in sig.provenance() if c.get("ok")})
+        if len(sig.products) > 1:
+            sig.notes.append("composed two Graph products: " + ", ".join(sig.products))
 
         return sig
