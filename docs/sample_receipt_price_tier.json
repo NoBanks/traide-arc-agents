@@ -1,0 +1,116 @@
+{
+  "anchor": {
+    "anchor_contract": "0x107B82c61E006A962a6C4ec1E9379667B6fa3f09",
+    "block": 60969453,
+    "effective_gas_price": 30000000000,
+    "explorer": "https://testnet.arcscan.app/tx/0x0311a0f9e7b1fc78a31cac92ce0b372718c0736f622a42eeb9b6a5b6312e54d3",
+    "gas_used": 73814,
+    "hash": "0x0311a0f9e7b1fc78a31cac92ce0b372718c0736f622a42eeb9b6a5b6312e54d3",
+    "label": "anchor",
+    "receipt_hash": "2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee",
+    "status": 1
+  },
+  "canonical_rule": "json.dumps(receipt, sort_keys=True, separators=(',',':')).encode('utf-8') then sha256",
+  "note": "REBALANCE's first real trade, decided by the Subgraph price tier through The Graph gateway. This receipt composes TWO Graph products: thegraph-token-api (activity) and thegraph-subgraph-gateway (price). The API key appears nowhere in it.",
+  "prev_receipt_hash": "2200f91fd93b10e5d43240e9b3e495780562f0c9ba9812d425cd689ebe1bcdf3",
+  "receipt": {
+    "action": "BUY_LINK",
+    "agent": "REBALANCE",
+    "agent_address": "0x27e13BC4CB091E7696D66c30887E3EE85f477c3B",
+    "balances": {
+      "link_wei_18": 2000000000000000000000,
+      "native_wei_18": 1000000000000000000,
+      "usdc_units_6": 1000000
+    },
+    "chain_id": 5042002,
+    "cycle": 16,
+    "engine": "traide-arc-agents",
+    "engine_version": "1.0.0",
+    "graph": {
+      "calls": [
+        {
+          "authenticated": false,
+          "endpoint": "https://api.pinax.network/v1/evm/dexes",
+          "fetched_at": "2026-09-07T21:18:05Z",
+          "ok": true,
+          "params": {
+            "network": "base"
+          },
+          "product": "thegraph-token-api",
+          "provider": "thegraph-token-api",
+          "response_bytes": 1927,
+          "response_sha256": "570bb047e39d84bcf7890a5f43a003b8a17d664cf272113c6207ddd0131fecf5",
+          "status": 200
+        },
+        {
+          "authenticated": true,
+          "endpoint": "https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV",
+          "fetched_at": "2026-09-07T21:17:41Z",
+          "ok": true,
+          "product": "thegraph-subgraph-gateway",
+          "provider": "thegraph-gateway",
+          "query": "query ResolveToken($sym: String!) { tokens(where: {symbol: $sym}, orderBy: volumeUSD, orderDirection: desc, first: 5) { id symbol name derivedETH volumeUSD } }",
+          "response_bytes": 846,
+          "response_sha256": "7e7e1952e7ef11aaf1a1301946a0e401eecc264e0b63793501f296ae50940dcc",
+          "status": 200,
+          "subgraph_id": "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV",
+          "variables": {
+            "sym": "LINK"
+          }
+        },
+        {
+          "authenticated": true,
+          "endpoint": "https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV",
+          "fetched_at": "2026-09-07T21:18:04Z",
+          "ok": true,
+          "product": "thegraph-subgraph-gateway",
+          "provider": "thegraph-gateway",
+          "query": "query ReferencePrice($tid: String!, $n: Int!) { bundles(first: 1) { ethPriceUSD } tokenHourDatas( where: {token: $tid} orderBy: periodStartUnix orderDirection: desc first: $n ) { periodStartUnix open high low close priceUSD } _meta { block { number } hasIndexingErrors } }",
+          "response_bytes": 6376,
+          "response_sha256": "3914ec12e70d716cf749a6218b8f3150f09c32e9aef70c661729b5e8522dbae8",
+          "status": 200,
+          "subgraph_id": "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV",
+          "variables": {
+            "n": 24,
+            "tid": "0x514910771af9ca656af840dff83e8264ecf986ca"
+          }
+        }
+      ],
+      "signal": {
+        "activity_score": 0.14182461262965496,
+        "price": 12.753162285303734,
+        "price_change": -0.018739937452134394
+      },
+      "tier": "price"
+    },
+    "pool": {
+      "amm": "0x4b6781AfC7e91D65acdD37a424D7A43f170f9120",
+      "reserves": {
+        "link_wei_18": 16792643245958971440256,
+        "usdc_units_6": 1969414
+      },
+      "token_a": "0x3600000000000000000000000000000000000000",
+      "token_b": "0x4A8ac01265a030Aad32fb9B7bD5f89Be18f21858",
+      "venue": "TRAIDEAMM"
+    },
+    "reason": "REBALANCE: LINK share 0.190, target 0.406 from the Graph price tier (-1.87 percent), drift -0.216",
+    "swap": {
+      "amount_in": "10000",
+      "block": 60969449,
+      "effective_gas_price": 30000000000,
+      "explorer": "https://testnet.arcscan.app/tx/0x92ee66575f8700dc46f156b9041a8d6cef80d8ec78f2d0af1b38b54a562d1b09",
+      "gas_used": 118322,
+      "hash": "0x92ee66575f8700dc46f156b9041a8d6cef80d8ec78f2d0af1b38b54a562d1b09",
+      "label": "swap",
+      "min_out": "84652838689754729699",
+      "quoted_out": "86380447642606867040",
+      "status": 1,
+      "token_in": "0x3600000000000000000000000000000000000000",
+      "token_out": "0x4A8ac01265a030Aad32fb9B7bD5f89Be18f21858",
+      "venue": "TRAIDEAMM"
+    },
+    "timestamp": "2026-09-07T21:18:23Z",
+    "type": "arc_agent_decision"
+  },
+  "receipt_hash": "2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee"
+}

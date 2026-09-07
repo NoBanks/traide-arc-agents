@@ -57,6 +57,11 @@ GATEWAY_BEARER_URL = "https://gateway.thegraph.com/api/subgraphs/id/{sid}"
 GATEWAY_PATH_URL = "https://gateway.thegraph.com/api/{key}/subgraphs/id/{sid}"
 
 USER_AGENT = "traide-arc-agents/1.0"
+
+# The reference-token scan orders every token by volumeUSD and measured 10.9
+# seconds against a cold gateway on 2026-09-07, which blew the 15 second default
+# and showed up as a phantom "no token with symbol LINK". Measured, not guessed.
+SUBGRAPH_TIMEOUT_SECONDS = 60
 PRODUCT = "thegraph-subgraph-gateway"
 
 # Candidate Uniswap v3 subgraphs, each with the page it came from. The resolver
@@ -137,15 +142,22 @@ def _post(sid: str, query: str, variables: dict[str, Any], api_key: str) -> tupl
                 "-H", "Content-Type: application/json",
                 "-H", f"Authorization: Bearer {api_key}",
                 "-A", USER_AGENT,
-                "--max-time", str(config.GRAPH_TIMEOUT_SECONDS),
+                "--max-time", str(SUBGRAPH_TIMEOUT_SECONDS),
                 "-d", payload,
             ],
-            capture_output=True, timeout=config.GRAPH_TIMEOUT_SECONDS + 10,
+            capture_output=True, timeout=SUBGRAPH_TIMEOUT_SECONDS + 10,
         )
         raw = proc.stdout.decode("utf-8", "replace")
         text, _, code = raw.rpartition("\n")
         body = text.encode("utf-8")
         status = int(code) if code.strip().isdigit() else 0
+        if proc.returncode != 0:
+            # curl exits non-zero on timeout or connection failure without
+            # raising, which used to leave a record of status 0 and no error at
+            # all. A provenance row that cannot say why it failed is useless.
+            error = f"curl exit {proc.returncode}"
+            if proc.returncode == 28:
+                error += f" (timeout after {SUBGRAPH_TIMEOUT_SECONDS}s)"
     except Exception as exc:
         error = type(exc).__name__
 
@@ -251,7 +263,13 @@ class SubgraphPriceClient:
 
         if not self._sid:
             for sid, source in CANDIDATE_SUBGRAPHS:
-                rec, body = _post(sid, META_QUERY, {}, api_key)
+                # Probe with the REAL token query, not with _meta. A subgraph can
+                # answer _meta happily and still carry an incompatible schema:
+                # verified live on 2026-09-07, candidate A3Np3RQb.. returns
+                # _meta fine but then "Type `Token` has no field `volumeUSD`".
+                # Validating with the query we actually depend on rejects that
+                # one automatically instead of selecting it and failing later.
+                rec, body = _post(sid, TOKEN_QUERY, {"sym": REFERENCE_SYMBOL}, api_key)
                 calls.append(rec)
                 if auth_error(rec):
                     self._auth_rejected = True
@@ -261,10 +279,17 @@ class SubgraphPriceClient:
                         "will not query; a query API key from the Studio API Keys tab will."
                     )
                     return calls, notes
-                if rec["ok"] and (body or {}).get("data", {}).get("_meta"):
+                rows = ((body or {}).get("data") or {}).get("tokens") or []
+                if rec["ok"] and rows:
                     self._sid, self._sid_source = sid, source
                     notes.append(f"subgraph tier: resolved {sid} from {source}")
+                    self._adopt_token(rows, notes)
                     break
+                if rec.get("graphql_errors"):
+                    notes.append(
+                        f"subgraph tier: candidate {sid[:12]}.. rejected, "
+                        f"{rec['graphql_errors'][:90]}"
+                    )
             if not self._sid:
                 notes.append("subgraph tier: no candidate subgraph answered")
                 return calls, notes
@@ -278,18 +303,29 @@ class SubgraphPriceClient:
                 return calls, notes
             rows = ((body or {}).get("data") or {}).get("tokens") or []
             if not rows:
-                notes.append(f"subgraph tier: no token with symbol {REFERENCE_SYMBOL}")
+                notes.append(
+                    f"subgraph tier: no token with symbol {REFERENCE_SYMBOL} "
+                    f"({rec.get('error') or rec.get('graphql_errors') or 'empty result'})"
+                )
                 return calls, notes
-            preferred = [r for r in rows if REFERENCE_NAME_HINT in str(r.get("name", "")).lower()]
-            chosen = (preferred or rows)[0]
-            self._token_id = str(chosen.get("id", "")).lower()
-            self._token_label = f"{chosen.get('symbol')} ({chosen.get('name')})"
-            notes.append(
-                f"subgraph tier: reference token {self._token_label} resolved by symbol "
-                f"from live data, address {self._token_id}"
-            )
+            self._adopt_token(rows, notes)
         self._save_cache()
         return calls, notes
+
+    def _adopt_token(self, rows: list[dict[str, Any]], notes: list[str]) -> None:
+        """
+        Pick the reference token from live rows. Prefers the highest-volume match
+        whose name looks like Chainlink, because a symbol alone is not unique:
+        the live query returns several tokens calling themselves LINK.
+        """
+        preferred = [r for r in rows if REFERENCE_NAME_HINT in str(r.get("name", "")).lower()]
+        chosen = (preferred or rows)[0]
+        self._token_id = str(chosen.get("id", "")).lower()
+        self._token_label = f"{chosen.get('symbol')} ({chosen.get('name')})"
+        notes.append(
+            f"subgraph tier: reference token {self._token_label} resolved by symbol "
+            f"from live data, address {self._token_id}"
+        )
 
     # ------------------------------------------------------------------ price
 
