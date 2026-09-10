@@ -13,19 +13,48 @@ It does four things and prints a pass or fail for each:
      that no decision that traded was made without a usable Graph tier.
 
     python3.11 -m scripts.verify
+    python3.11 -m scripts.verify --ledger https://arc-agents.nohumannearby.com/ledger.json
+
+A fresh clone has no data/ directory (it is gitignored, the runner writes it), so
+when the local ledger is absent this script reads the public export from the
+live dashboard instead. To verify a single receipt in more depth, including its
+anchor tx, the attester and a live re-run of its Graph calls, use
+scripts/verify_receipt.py.
 """
 
 from __future__ import annotations
 
+import argparse
+import json
 import sys
+import urllib.request
 
 from arc_agents import anchor, config, receipts
 from arc_agents.chain import ANCHOR_ABI, ArcClient
 
+PUBLIC_LEDGER = "https://arc-agents.nohumannearby.com/ledger.json"
 
-def main() -> int:
+
+def load_rows(ledger: str) -> list[dict]:
+    if ledger.startswith("http://") or ledger.startswith("https://"):
+        req = urllib.request.Request(ledger, headers={"Accept": "application/json", "User-Agent": "traide-arc-agents/verify"})
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        return list(body.get("rows", [])) if isinstance(body, dict) else list(body)
+    from pathlib import Path
+    return receipts.read_all(Path(ledger))
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="verify the whole traide-arc-agents ledger")
+    parser.add_argument("--ledger", default="",
+                        help=f"local receipts.jsonl or a /ledger.json URL (default: data/receipts.jsonl if present, else {PUBLIC_LEDGER})")
+    args = parser.parse_args(argv)
+
     config.load_dotenv()
-    rows = receipts.read_all()
+    ledger = args.ledger or (str(config.RECEIPTS_PATH) if config.RECEIPTS_PATH.exists() else PUBLIC_LEDGER)
+    rows = load_rows(ledger)
+    print(f"ledger: {ledger}")
     if not rows:
         print("no receipts to verify")
         return 1
