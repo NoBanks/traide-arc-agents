@@ -67,11 +67,11 @@
       "status": 1
     },
     "fund_link_AGGRESSIVE": {
-      "block": 61139389,
-      "effective_gas_price": 24179286777,
-      "explorer": "https://testnet.arcscan.app/tx/0xd0fb9793fc617d46b59f629c9664457cd9a9991ad50765b5d063a0c3ca568867",
+      "block": 61389326,
+      "effective_gas_price": 26548800000,
+      "explorer": "https://testnet.arcscan.app/tx/0xa8d02add944e1e2c60aa996ed136c3b79d2bd73a921bf30db9e330e2b5b4899a",
       "gas_used": 34165,
-      "hash": "0xd0fb9793fc617d46b59f629c9664457cd9a9991ad50765b5d063a0c3ca568867",
+      "hash": "0xa8d02add944e1e2c60aa996ed136c3b79d2bd73a921bf30db9e330e2b5b4899a",
       "label": "fund_link_AGGRESSIVE",
       "status": 1
     },
@@ -94,20 +94,20 @@
       "status": 1
     },
     "fund_usdc_AGGRESSIVE": {
-      "block": 60965909,
-      "effective_gas_price": 30000000000,
-      "explorer": "https://testnet.arcscan.app/tx/0x02dd6c15455f1496fa65629b8c673b74f9423ff0337d89ba6b8119957732d3e3",
+      "block": 61389322,
+      "effective_gas_price": 26548800000,
+      "explorer": "https://testnet.arcscan.app/tx/0x6408932994661cd9bc4970805274ca5a2a41a2646f4f21518bb1436eb2a62483",
       "gas_used": 21000,
-      "hash": "0x02dd6c15455f1496fa65629b8c673b74f9423ff0337d89ba6b8119957732d3e3",
+      "hash": "0x6408932994661cd9bc4970805274ca5a2a41a2646f4f21518bb1436eb2a62483",
       "label": "fund_usdc_AGGRESSIVE",
       "status": 1
     },
     "fund_usdc_PASSIVE": {
-      "block": 61139383,
-      "effective_gas_price": 24179286777,
-      "explorer": "https://testnet.arcscan.app/tx/0xd829d9f1b55ff640f0ce697e18aad4032b66a766abdb534483748e8a6fe04ca2",
+      "block": 61389317,
+      "effective_gas_price": 26548800000,
+      "explorer": "https://testnet.arcscan.app/tx/0x4bb19dc3804a53fe21c024f4022155efd08b312dd663d94f95004aeaf11e60f0",
       "gas_used": 21000,
-      "hash": "0xd829d9f1b55ff640f0ce697e18aad4032b66a766abdb534483748e8a6fe04ca2",
+      "hash": "0x4bb19dc3804a53fe21c024f4022155efd08b312dd663d94f95004aeaf11e60f0",
       "label": "fund_usdc_PASSIVE",
       "status": 1
     },
