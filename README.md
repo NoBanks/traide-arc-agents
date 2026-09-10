@@ -11,6 +11,97 @@ the demo path.
 
 **Live demo: https://arc-agents.nohumannearby.com**
 
+## JUDGE QUICKSTART
+
+Everything below was run on 2026-09-10 and pasted verbatim. Nothing is trimmed.
+
+### 60 seconds, nothing to install
+
+1. Open **https://arc-agents.nohumannearby.com**. The status line under the title
+   is read from the ledger on every load: receipts, real swaps, anchors, last
+   decision time, when the ledger started.
+2. Pick any row in the **Decision ledger** table. The `receipt sha256` column is
+   that row's hash. Its `swap tx` and `anchor tx` links open on
+   `testnet.arcscan.app`, both status 1, both sent by that agent's own address.
+3. The same row as JSON, no scraping:
+   `https://arc-agents.nohumannearby.com/receipt/<sha256>.json`. The whole
+   ledger as one document: **https://arc-agents.nohumannearby.com/ledger.json**
+   (about 5 MB; `?traded=1&limit=20` for the last twenty trades,
+   `?agent=REBALANCE` per agent). Read only, no credential is ever in a receipt.
+
+### 5 minutes, one command that re-derives every claim in a row
+
+No dotenv, no keys, no local data. A fresh clone resolves the hash against the
+public export above.
+
+```bash
+git clone https://github.com/NoBanks/traide-arc-agents && cd traide-arc-agents
+python3.11 -m pip install -r requirements.txt
+python3.11 -m scripts.verify_receipt 2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee
+```
+
+That hash is REBALANCE's first price-tier trade, also committed at
+`docs/sample_receipt_price_tier.json`. Any hash from the dashboard works the
+same way. Output of that exact command from a clone with no dotenv and no
+`data/`, 2026-09-10:
+
+```
+receipt 2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee
+  REBALANCE BUY_LINK cycle 16 at 2026-09-07T21:18:23Z on chain 5042002, engine traide-arc-agents 1.0.0
+  source: https://arc-agents.nohumannearby.com/receipt/2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee.json
+  dashboard: https://arc-agents.nohumannearby.com
+[PASS] hash: sha256(canonical JSON) = 2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee, matches the ledger's receipt_hash
+  rpc: https://rpc.testnet.arc.io (chain id 5042002, head block 61387822)
+[PASS] anchor: attestedAt(0x2d51c783230f..) = 1788815904 (2026-09-07T21:18:24Z) on 0x107B82c6.., attestedBy = 0x27e13BC4.. which is the agent's own address
+       https://testnet.arcscan.app/address/0x107B82c61E006A962a6C4ec1E9379667B6fa3f09
+[PASS] anchor tx: 0x0311a0f9e7b1.. status 1, block 60969453, from the agent, to the anchor contract, Attested event carries this hash
+       https://testnet.arcscan.app/tx/0x0311a0f9e7b1fc78a31cac92ce0b372718c0736f622a42eeb9b6a5b6312e54d3
+[PASS] swap tx: 0x92ee66575f87.. status 1, block 60969449, from the agent, to TRAIDEAMM 0x4b6781Af.., BUY_LINK amount_in 10000
+       https://testnet.arcscan.app/tx/0x92ee66575f8700dc46f156b9041a8d6cef80d8ec78f2d0af1b38b54a562d1b09
+[PASS] graph 1/3: thegraph-token-api https://api.pinax.network/v1/evm/dexes params {"network": "base"}
+       recorded 2026-09-07T21:18:05Z HTTP 200, 1927 bytes, sha256 570bb047e39d..; live response now HTTP 200, 1927 bytes, sha256 91a25ab61741..: live data has moved since 2026-09-07T21:18:05Z, which is expected for a live index. The recorded hash pins what the agent saw and the anchor pins when
+[SKIP] graph 2/3: thegraph-subgraph-gateway https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV variables {"sym": "LINK"}
+       recorded 2026-09-07T21:17:41Z HTTP 200, 846 bytes, sha256 7e7e1952e7ef..; not re-run: needs GRAPH_GATEWAY_API_KEY in the environment to re-run
+[SKIP] graph 3/3: thegraph-subgraph-gateway https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV variables {"n": 24, "tid": "0x514910771af9ca656af840dff83e8264ecf986ca"}
+       recorded 2026-09-07T21:18:04Z HTTP 200, 6376 bytes, sha256 3914ec12e70d..; not re-run: needs GRAPH_GATEWAY_API_KEY in the environment to re-run
+[PASS] guard: decision traded on Graph tier "price"; a swap on tier "none" would fail here
+RESULT: 6 PASS, 0 FAIL, 2 SKIP
+```
+
+What each line proved: the sha256 was recomputed from the canonical JSON with the
+traide-keeper rule; `attestedAt` and `attestedBy` were read from
+`ArcReceiptAnchor` by `eth_call` and the attester is the agent's own address;
+the anchor transaction and the swap transaction were re-fetched from Arc with
+status 1, from the agent, to the right contract, in the recorded block; the
+Token API call was re-issued live (the recorded hash pins what the agent saw,
+the live hash shows the index has moved since); the two gateway calls are
+skipped without a Subgraph Studio key and re-run when `GRAPH_GATEWAY_API_KEY`
+is set. Pass `--no-graph` to skip the live re-runs entirely, or
+`docs/sample_receipt_price_tier.json` as the target to verify the committed file.
+
+Then the whole ledger, every receipt hash, every swap and every anchor, from the
+same clone:
+
+```
+$ python3.11 -m scripts.verify
+ledger: https://arc-agents.nohumannearby.com/ledger.json
+[PASS] ledger: 2196 receipts, 0 hash mismatches, 0 chain breaks
+[PASS] swaps: 589 refetched from Arc, 0 not status 1, 0 could not be fetched after 3 attempts
+[PASS] anchors: 589 anchored, contract total() 589, 0 hashes absent on chain
+[PASS] graph: 0 receipts with a tier but no provenance, 0 swaps made without a Graph tier
+
+Graph endpoints that actually decided these trades:
+  https://api.pinax.network/v1/evm/dexes
+  https://api.pinax.network/v1/evm/pools
+  https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV
+
+anchor contract: https://testnet.arcscan.app/address/0x107B82c61E006A962a6C4ec1E9379667B6fa3f09
+ALL CHECKS PASSED
+```
+
+Run either script against your own download with `--ledger <file or URL>`.
+Both exit 0 only when nothing failed. `python3.11 -m pytest` runs the 22 tests.
+
 Three autonomous agents, each with its own funded wallet, trading a real pair on
 Arc testnet. Every trade is decided by data pulled from The Graph at decision
 time, recorded as a canonical keeper receipt, and anchored on Arc.
@@ -38,6 +129,8 @@ be updated when the system changes, rather than being a screenshot nobody can ed
 | [docs/PRIZE_EVIDENCE.md](docs/PRIZE_EVIDENCE.md) | Each prize requirement quoted from the ETHOnline prizes page, mapped to a file path, address or tx hash. Includes the PRE-EXISTING versus NEW disclosure and an honest open-items list |
 | [docs/MAINNET_READY.md](docs/MAINNET_READY.md) | The config-only path to Arc mainnet, what must not change, gas budget, and a preflight checklist. States up front that nothing is verified on mainnet because mainnet is not live until Sep 16 |
 | [docs/sample_receipt_price_tier.json](docs/sample_receipt_price_tier.json) | A real decision receipt composing both Graph products, with its swap and anchor transactions |
+| [scripts/verify_receipt.py](scripts/verify_receipt.py) | One command verifies one receipt end to end: hash, on-chain anchor and attester, anchor tx, swap tx, live re-run of its Graph calls. See JUDGE QUICKSTART |
+| [/ledger.json](https://arc-agents.nohumannearby.com/ledger.json) | The whole hash-chained ledger as one public JSON document, byte-true per row, served by the dashboard |
 | [docs/graph_activity_baseline.json](docs/graph_activity_baseline.json) | The raw measurement windows behind the activity signal's calibration constant |
 
 ## The one rule that matters
@@ -257,7 +350,8 @@ and never returned by any function.
 
 A real receipt from a real cycle is committed at `docs/sample_receipt.json`, with
 its swap transaction and its anchor transaction beside it. The running ledger is
-at `data/receipts.jsonl` and is served at `/api/receipts`.
+at `data/receipts.jsonl`, exported whole at `/ledger.json` and one row at a time
+at `/receipt/<sha256>.json`.
 
 ## The agents
 
@@ -335,7 +429,9 @@ python3.11 -m arc_agents.dashboard   # http://127.0.0.1:17360/
 
 The dashboard is published at **https://arc-agents.nohumannearby.com** through a
 Cloudflare tunnel (PM2 app `traide-arc-agents-tunnel`). It is read only and
-serves free routes only.
+serves free routes only. Routes: `/` (HTML), `/ledger.json` (whole ledger,
+`?limit=`, `?traded=1`, `?agent=`), `/receipt/<sha256>.json`, `/api/state`,
+`/api/receipts`, `/api/verify`, `/healthz`.
 
 Unattended, under PM2, with the crash-loop guards this house requires
 (`max_restarts`, `min_uptime`, exponential backoff, logs in `~/.pm2/logs`):
@@ -347,28 +443,46 @@ pm2 logs arc-agents-runner --lines 50 --nostream
 
 ## Verifying the receipts yourself
 
-One command, no need to trust the dashboard or this README:
+Two commands, no need to trust the dashboard or this README. Both read
+`data/receipts.jsonl` when it exists and fall back to the public `/ledger.json`
+export when it does not, so they work from a fresh clone.
+
+One receipt, every claim in it re-derived, with the explorer URL per check:
 
 ```bash
+python3.11 -m scripts.verify_receipt <receipt sha256>
+python3.11 -m scripts.verify_receipt docs/sample_receipt_price_tier.json
+```
+
+The whole ledger:
+
+```
 $ python3.11 -m scripts.verify
-[PASS] ledger: 24 receipts, 0 hash mismatches, 0 chain breaks
-[PASS] swaps: 10 refetched from Arc, 0 not status 1
-[PASS] anchors: 10 anchored, contract total() 10, 0 hashes absent on chain
+ledger: https://arc-agents.nohumannearby.com/ledger.json
+[PASS] ledger: 2196 receipts, 0 hash mismatches, 0 chain breaks
+[PASS] swaps: 589 refetched from Arc, 0 not status 1, 0 could not be fetched after 3 attempts
+[PASS] anchors: 589 anchored, contract total() 589, 0 hashes absent on chain
 [PASS] graph: 0 receipts with a tier but no provenance, 0 swaps made without a Graph tier
 
 Graph endpoints that actually decided these trades:
   https://api.pinax.network/v1/evm/dexes
+  https://api.pinax.network/v1/evm/pools
+  https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV
+
+anchor contract: https://testnet.arcscan.app/address/0x107B82c61E006A962a6C4ec1E9379667B6fa3f09
 ALL CHECKS PASSED
 ```
 
 It recomputes every receipt hash from its own canonical bytes, walks the
-prev-hash chain, refetches every swap transaction from Arc and requires status 1,
-calls `attestedAt(bytes32)` on the anchor contract for every anchored hash and
+prev-hash chain, refetches every swap transaction from Arc (three attempts each,
+and it reports "could not be fetched" separately from "reverted"), calls
+`attestedAt(bytes32)` on the anchor contract for every anchored hash and
 requires a nonzero first-seen timestamp, and confirms no swap was ever made
-without a usable Graph tier.
+without a usable Graph tier. Full output of both scripts from a clone with no
+local data is pasted under JUDGE QUICKSTART at the top.
 
 The dashboard exposes the first check on its own at
-`curl -s http://127.0.0.1:17360/api/verify`.
+`curl -s https://arc-agents.nohumannearby.com/api/verify`.
 
 ## Deployment ready on Arc mainnet
 

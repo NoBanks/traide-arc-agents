@@ -29,6 +29,10 @@ Nothing in this document is aspirational. If something is not done, it says so.
 | REBALANCE | [0x27e13BC4CB091E7696D66c30887E3EE85f477c3B](https://testnet.arcscan.app/address/0x27e13BC4CB091E7696D66c30887E3EE85f477c3B) |
 | Architecture diagram | [docs/architecture.png](architecture.png) |
 | Uniswap feedback | [FEEDBACK.md](../FEEDBACK.md) |
+| Public ledger export | https://arc-agents.nohumannearby.com/ledger.json (whole hash-chained ledger, byte-true per row; `?traded=1&limit=N`, `?agent=NAME`) |
+| One receipt as JSON | `https://arc-agents.nohumannearby.com/receipt/<sha256>.json` |
+| One-command verifier, per receipt | [`scripts/verify_receipt.py`](../scripts/verify_receipt.py): hash, `attestedAt` + `attestedBy`, anchor tx, swap tx, live Graph re-run. JUDGE QUICKSTART in [README.md](../README.md) |
+| Whole-ledger verifier | [`scripts/verify.py`](../scripts/verify.py), falls back to the public export on a clone with no `data/` |
 
 Snapshot at the time of writing, all reproducible with `python3.11 -m scripts.verify`:
 
@@ -43,6 +47,30 @@ ALL CHECKS PASSED
 24 real swaps: PASSIVE 11, AGGRESSIVE 11, REBALANCE 2. Six of those were decided by the Subgraph
 price tier. REBALANCE also holds 15 recorded refusals, which is evidence in its own right and is
 explained under The Graph section below.
+
+**Re-run 2026-09-10** from a fresh clone with no dotenv and no `data/`, so the rows came from the
+public `/ledger.json` export and every swap and anchor was refetched from Arc:
+
+```
+$ python3.11 -m scripts.verify
+ledger: https://arc-agents.nohumannearby.com/ledger.json
+[PASS] ledger: 2196 receipts, 0 hash mismatches, 0 chain breaks
+[PASS] swaps: 589 refetched from Arc, 0 not status 1, 0 could not be fetched after 3 attempts
+[PASS] anchors: 589 anchored, contract total() 589, 0 hashes absent on chain
+[PASS] graph: 0 receipts with a tier but no provenance, 0 swaps made without a Graph tier
+
+Graph endpoints that actually decided these trades:
+  https://api.pinax.network/v1/evm/dexes
+  https://api.pinax.network/v1/evm/pools
+  https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV
+
+anchor contract: https://testnet.arcscan.app/address/0x107B82c61E006A962a6C4ec1E9379667B6fa3f09
+ALL CHECKS PASSED
+```
+
+Three days unattended under PM2: 2196 decisions, 589 real swaps, 589 anchors, contract `total()`
+589, zero mismatches. The ledger is still growing while this file sits still, so a judge's own
+run will show larger numbers than these, never smaller.
 
 ---
 
@@ -103,9 +131,9 @@ mapped below.
 | **Make payments using USDC** | 24 real swaps against TRAIDEAMM, quote asset is Arc's native USDC `0x3600000000000000000000000000000000000000`. First: [0x8a3c6944...](https://testnet.arcscan.app/tx/0x8a3c694454c088a3c36aaba289e241fdc5d1db14a5a13699adc424e745e0e90d). Full table in `ETHONLINE_2026_BUILD_LOG.md` |
 | **Manage risk** | Per-swap size capped at 0.001 to 0.010 USDC (`SWAP_MIN/MAX_USDC_UNITS`); every swap quoted first and sent with a 2 percent slippage floor (`runner._execute`); each agent keeps 0.2 USDC back for gas, since on Arc gas and the traded asset are the same thing; the deployer is never drawn below a 10 USDC floor |
 | **Clear decision logic** | [`arc_agents/agents.py`](../arc_agents/agents.py), three named strategies with explicit thresholds. Every decision records a human-readable reason, for example "REBALANCE: LINK share 0.190, target 0.406 from the Graph price tier (-1.87 percent), drift -0.216" |
-| **Autonomous spending flows** | No human in the loop. PM2 app `arc-agents-runner` decides, approves, swaps and anchors on a 300 second cycle |
+| **Autonomous spending flows** | No human in the loop. PM2 app `arc-agents-runner` decides, approves, swaps and anchors on a 300 second cycle. By 2026-09-10, three days after launch: 589 real swaps and 589 anchors, unattended, all re-verified from a clean clone (see the 2026-09-10 re-run under Quick reference) |
 | Track A: "stablecoin-native DeFi on Arc... swaps, liquidity provision" | Swaps by the agents; liquidity provision by the deployer, which deepened the pool from 0.05 to 2.00 USDC a side in [0x671aef83...](https://testnet.arcscan.app/tx/0x671aef8352d4b5c8bfdd1e630ae91403852aa591e0ab17763a9141f94ad3cdec) |
-| "functional MVP with a diagram showing working frontend and backend" | Backend: the runner and the fleet on Arc. Frontend: https://arc-agents.nohumannearby.com. Diagram: [docs/architecture.png](architecture.png), generated from code by [`scripts/make_architecture_png.py`](../scripts/make_architecture_png.py) |
+| "functional MVP with a diagram showing working frontend and backend" | Backend: the runner and the fleet on Arc. Frontend: https://arc-agents.nohumannearby.com, with the ledger exported whole at `/ledger.json` and per row at `/receipt/<sha256>.json`. Diagram: [docs/architecture.png](architecture.png), generated from code by [`scripts/make_architecture_png.py`](../scripts/make_architecture_png.py) |
 | "GitHub/Replit repo link" | https://github.com/NoBanks/traide-arc-agents |
 | "video demo + presentation" | **NOT DONE.** A 2 to 4 minute demo video is required by the submission form and does not exist yet. This is the single largest open item |
 | "Be registered as a Continuity Project" | **NOT CONFIRMED.** Ryan's action, see the disclosure section above |
@@ -233,6 +261,43 @@ for the key value: not present.
 
 Anyone can re-run the whole chain of custody with `python3.11 -m scripts.verify`, which also
 prints the Graph endpoints that actually decided the trades.
+
+**And one receipt at a time, with the Graph calls re-issued live.** This is the check that makes
+the provenance claim falsifiable rather than rhetorical. `scripts/verify_receipt.py` takes a hash
+from the dashboard, recomputes the sha256, reads `attestedAt` and `attestedBy` from the anchor
+contract, refetches the anchor and swap transactions, then re-issues every recorded Graph request
+and compares response hashes. The keyless Token API call is always re-run; the gateway calls are
+re-run when `GRAPH_GATEWAY_API_KEY` is set and skipped, saying so, when it is not. Output of the
+worked example above, run 2026-09-10 from a clone with no dotenv and no `data/`:
+
+```
+$ python3.11 -m scripts.verify_receipt 2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee
+receipt 2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee
+  REBALANCE BUY_LINK cycle 16 at 2026-09-07T21:18:23Z on chain 5042002, engine traide-arc-agents 1.0.0
+  source: https://arc-agents.nohumannearby.com/receipt/2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee.json
+  dashboard: https://arc-agents.nohumannearby.com
+[PASS] hash: sha256(canonical JSON) = 2d51c783230fe76de2b59fc2d3548840ebb41586a8c9cf23a4b5f985a5f120ee, matches the ledger's receipt_hash
+  rpc: https://rpc.testnet.arc.io (chain id 5042002, head block 61387822)
+[PASS] anchor: attestedAt(0x2d51c783230f..) = 1788815904 (2026-09-07T21:18:24Z) on 0x107B82c6.., attestedBy = 0x27e13BC4.. which is the agent's own address
+       https://testnet.arcscan.app/address/0x107B82c61E006A962a6C4ec1E9379667B6fa3f09
+[PASS] anchor tx: 0x0311a0f9e7b1.. status 1, block 60969453, from the agent, to the anchor contract, Attested event carries this hash
+       https://testnet.arcscan.app/tx/0x0311a0f9e7b1fc78a31cac92ce0b372718c0736f622a42eeb9b6a5b6312e54d3
+[PASS] swap tx: 0x92ee66575f87.. status 1, block 60969449, from the agent, to TRAIDEAMM 0x4b6781Af.., BUY_LINK amount_in 10000
+       https://testnet.arcscan.app/tx/0x92ee66575f8700dc46f156b9041a8d6cef80d8ec78f2d0af1b38b54a562d1b09
+[PASS] graph 1/3: thegraph-token-api https://api.pinax.network/v1/evm/dexes params {"network": "base"}
+       recorded 2026-09-07T21:18:05Z HTTP 200, 1927 bytes, sha256 570bb047e39d..; live response now HTTP 200, 1927 bytes, sha256 91a25ab61741..: live data has moved since 2026-09-07T21:18:05Z, which is expected for a live index. The recorded hash pins what the agent saw and the anchor pins when
+[SKIP] graph 2/3: thegraph-subgraph-gateway https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV variables {"sym": "LINK"}
+       recorded 2026-09-07T21:17:41Z HTTP 200, 846 bytes, sha256 7e7e1952e7ef..; not re-run: needs GRAPH_GATEWAY_API_KEY in the environment to re-run
+[SKIP] graph 3/3: thegraph-subgraph-gateway https://gateway.thegraph.com/api/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV variables {"n": 24, "tid": "0x514910771af9ca656af840dff83e8264ecf986ca"}
+       recorded 2026-09-07T21:18:04Z HTTP 200, 6376 bytes, sha256 3914ec12e70d..; not re-run: needs GRAPH_GATEWAY_API_KEY in the environment to re-run
+[PASS] guard: decision traded on Graph tier "price"; a swap on tier "none" would fail here
+RESULT: 6 PASS, 0 FAIL, 2 SKIP
+```
+
+The live Token API hash differs from the recorded one, and the verifier says so plainly instead
+of pretending a live index stands still. What is provable is exactly what the receipt claims:
+this agent saw a response with sha256 `570bb047..` at 21:18:05Z, decided on it, and anchored that
+decision on chain 19 seconds later, signed by its own key.
 
 ---
 
