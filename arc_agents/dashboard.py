@@ -11,8 +11,13 @@ data/receipts.jsonl) plus a small number of eth_calls, and renders them.
 Routes
     GET /                 HTML overview
     GET /api/state        agents, balances, pool, latest Graph signal
-    GET /api/receipts     receipt ledger with anchor transactions
+    GET /api/receipts     receipt ledger with anchor transactions (last N)
     GET /api/verify       recompute every receipt hash and check the chain
+    GET /ledger.json      the WHOLE hash chained ledger as one JSON document,
+                          for verifiers and judges. Read only, no secrets.
+                          ?limit=N returns the last N rows, ?agent=NAME filters,
+                          ?traded=1 keeps only rows with a swap.
+    GET /receipt/<sha256>.json   one ledger row by receipt hash
     GET /healthz          liveness
 """
 
@@ -23,7 +28,7 @@ import json
 import time
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from . import config, receipts
@@ -87,6 +92,56 @@ def api_verify() -> JSONResponse:
     return JSONResponse(receipts.verify_ledger())
 
 
+def _ledger_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """The counts every view of the ledger agrees on, computed in one place."""
+    swaps = sum(1 for r in rows if (r.get("receipt", {}).get("swap") or {}).get("hash"))
+    anchors = sum(1 for r in rows if (r.get("anchor") or {}).get("hash"))
+    last = rows[-1].get("receipt", {}).get("timestamp", "") if rows else ""
+    return {"receipts": len(rows), "swaps": swaps, "anchors": anchors, "last_decision_at": last}
+
+
+@app.get("/ledger.json")
+def ledger_json(limit: int = 0, agent: str = "", traded: bool = False) -> JSONResponse:
+    """
+    Public, read-only export of data/receipts.jsonl. Every row is exactly the
+    line the runner wrote: the canonical receipt object, its sha256, the previous
+    row's sha256 and the anchor transaction. Nothing is added or reshaped, so
+    scripts/verify_receipt.py can recompute each hash from this document alone.
+    No credential is ever written to a receipt, so there is nothing to redact.
+    """
+    rows = receipts.read_all()
+    summary = _ledger_summary(rows)
+    if agent:
+        rows = [r for r in rows if r.get("receipt", {}).get("agent") == agent.upper()]
+    if traded:
+        rows = [r for r in rows if (r.get("receipt", {}).get("swap") or {}).get("hash")]
+    if limit > 0:
+        rows = rows[-limit:]
+    return JSONResponse({
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "chain_id": config.CHAIN_ID,
+        "explorer": config.EXPLORER_BASE,
+        "amm": config.TRAIDE_AMM,
+        "anchor_contract": anchor_address(),
+        "canonical_rule": "sha256(json.dumps(receipt, sort_keys=True, separators=(',',':')).encode('utf-8'))",
+        "verify_one": "python3.11 -m scripts.verify_receipt <receipt_hash> --ledger <this URL>",
+        "totals": summary,
+        "count": len(rows),
+        "rows": rows,
+    })
+
+
+@app.get("/receipt/{receipt_hash}.json")
+def receipt_json(receipt_hash: str) -> JSONResponse:
+    """One ledger row by receipt sha256, so a verifier need not pull the whole ledger."""
+    wanted = receipt_hash[2:] if receipt_hash.startswith("0x") else receipt_hash
+    wanted = wanted.lower()
+    for row in receipts.read_all():
+        if row.get("receipt_hash") == wanted:
+            return JSONResponse(row)
+    return JSONResponse({"error": "receipt not found", "receipt_hash": wanted}, status_code=404)
+
+
 CSS = """
 :root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--line:#30363d;--fg:#e6edf3;
 --dim:#8b949e;--ok:#3fb950;--warn:#d29922;--accent:#7c8cff}
@@ -115,6 +170,10 @@ a:hover{text-decoration:underline}
 .hold{color:var(--dim)}
 .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--warn);
 border-radius:8px;padding:12px 16px;margin:14px 0;color:var(--dim)}
+.status{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 18px;padding:8px 12px;border:1px solid var(--line);
+border-radius:8px;background:var(--panel);font-size:12.5px;color:var(--dim)}
+.status b{color:var(--fg);font-weight:600}
+.status .mono{font-size:12px}
 """
 
 
@@ -133,7 +192,10 @@ def _fmt_link(wei: Any) -> str:
 
 
 @app.get("/", response_class=HTMLResponse)
-def index() -> HTMLResponse:
+def index(request: Request) -> HTMLResponse:
+    forwarded = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    scheme = request.headers.get("x-forwarded-proto") or request.url.scheme
+    request_base = f"{scheme}://{forwarded}" if forwarded else ""
     state = _state()
     dep = _deployment()
     rows = receipts.read_all()
@@ -213,8 +275,21 @@ def index() -> HTMLResponse:
 <td>{swap_cell}</td><td>{anchor_cell}</td></tr>"""
         )
 
-    swaps = sum(1 for r in rows if (r.get("receipt", {}).get("swap") or {}).get("hash"))
-    anchors = sum(1 for r in rows if (r.get("anchor") or {}).get("hash"))
+    summary = _ledger_summary(rows)
+    swaps = summary["swaps"]
+    anchors = summary["anchors"]
+    started = str(state.get("started_at", "")) or "-"
+    last_decision = summary["last_decision_at"] or "-"
+    status_line = (
+        '<div class="status">'
+        f'<span><b>{len(rows)}</b> receipts</span>'
+        f'<span><b>{swaps}</b> real swaps</span>'
+        f'<span><b>{anchors}</b> anchored on Arc</span>'
+        f'<span>last decision <b class="mono">{html.escape(last_decision)}</b></span>'
+        f'<span>ledger running since <b class="mono">{html.escape(started)}</b></span>'
+        f'<span>integrity <b>{"verified" if verify.get("ok") else "BROKEN"}</b></span>'
+        '</div>'
+    )
 
     body = f"""<title>TRAIDE agents on Arc</title><style>{CSS}</style>
 <div class="wrap">
@@ -222,6 +297,7 @@ def index() -> HTMLResponse:
 <p class="sub">Three autonomous agents, each with its own wallet, trading a real
 TRAIDEAMM pair on Arc testnet {config.CHAIN_ID}. Every decision is driven by live
 data from The Graph and recorded as a keeper receipt anchored on chain.</p>
+{status_line}
 {banner}
 <h2>Agents</h2>
 <div class="grid">{''.join(cards) or '<div class="card">no agent record yet</div>'}</div>
@@ -262,7 +338,10 @@ data from The Graph and recorded as a keeper receipt anchored on chain.</p>
 <a href="/api/state">/api/state</a> &middot;
 <a href="/api/receipts">/api/receipts</a> &middot;
 <a href="/api/verify">/api/verify</a> &middot;
+<a href="/ledger.json?limit=50">/ledger.json</a> (full export, <code>?limit=N</code>, <code>?traded=1</code>, <code>?agent=NAME</code>) &middot;
+<code>/receipt/&lt;sha256&gt;.json</code> &middot;
 <a href="/healthz">/healthz</a></p>
+<p class="sub">Verify any row yourself: <code class="mono">python3.11 -m scripts.verify_receipt &lt;receipt sha256&gt; --ledger {html.escape(request_base)}/ledger.json</code></p>
 </div>"""
     return HTMLResponse(body)
 
