@@ -67,11 +67,11 @@
       "status": 1
     },
     "fund_link_AGGRESSIVE": {
-      "block": 60965913,
-      "effective_gas_price": 30000000000,
-      "explorer": "https://testnet.arcscan.app/tx/0xe989d78017ad5112741aa2e531134e5f27da2ddca3ec0f6fbc823e875ad91fe0",
-      "gas_used": 51265,
-      "hash": "0xe989d78017ad5112741aa2e531134e5f27da2ddca3ec0f6fbc823e875ad91fe0",
+      "block": 61139389,
+      "effective_gas_price": 24179286777,
+      "explorer": "https://testnet.arcscan.app/tx/0xd0fb9793fc617d46b59f629c9664457cd9a9991ad50765b5d063a0c3ca568867",
+      "gas_used": 34165,
+      "hash": "0xd0fb9793fc617d46b59f629c9664457cd9a9991ad50765b5d063a0c3ca568867",
       "label": "fund_link_AGGRESSIVE",
       "status": 1
     },
@@ -103,11 +103,11 @@
       "status": 1
     },
     "fund_usdc_PASSIVE": {
-      "block": 60965900,
-      "effective_gas_price": 30000000000,
-      "explorer": "https://testnet.arcscan.app/tx/0xbffca526f19b147f8d2cb2f347ec07edd17393266da68c9618003c5b1d1115e7",
+      "block": 61139383,
+      "effective_gas_price": 24179286777,
+      "explorer": "https://testnet.arcscan.app/tx/0xd829d9f1b55ff640f0ce697e18aad4032b66a766abdb534483748e8a6fe04ca2",
       "gas_used": 21000,
-      "hash": "0xbffca526f19b147f8d2cb2f347ec07edd17393266da68c9618003c5b1d1115e7",
+      "hash": "0xd829d9f1b55ff640f0ce697e18aad4032b66a766abdb534483748e8a6fe04ca2",
       "label": "fund_usdc_PASSIVE",
       "status": 1
     },
