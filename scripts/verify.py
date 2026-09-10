@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 import urllib.request
 
 from arc_agents import anchor, config, receipts
@@ -62,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     failures = 0
 
     # 1. ledger integrity
-    report = receipts.verify_ledger()
+    report = receipts.verify_rows(rows)
     ok = report["ok"]
     failures += 0 if ok else 1
     print(f"[{'PASS' if ok else 'FAIL'}] ledger: {report['rows']} receipts, "
@@ -71,19 +72,38 @@ def main(argv: list[str] | None = None) -> int:
 
     client = ArcClient()
 
-    # 2. swaps
+    # 2. swaps. Each receipt is refetched up to three times, because a single
+    # public-RPC hiccup is not evidence of a revert. On 2026-09-10 a one-shot
+    # loop over 589 swaps reported 7 "not status 1"; every one of the 7 was a
+    # transport error and all 589 were status 1 on retry. The two cases are
+    # now counted separately so the line cannot say "reverted" when it means
+    # "the RPC did not answer".
     swaps = [r for r in rows if (r["receipt"].get("swap") or {}).get("hash")]
-    bad = []
+    reverted = []
+    unfetched = []
     for r in swaps:
         h = r["receipt"]["swap"]["hash"]
-        try:
-            if int(client.w3.eth.get_transaction_receipt(h)["status"]) != 1:
-                bad.append(h)
-        except Exception:
-            bad.append(h)
-    failures += 0 if not bad else 1
+        last_error = ""
+        for attempt in range(3):
+            try:
+                status = int(client.w3.eth.get_transaction_receipt(h)["status"])
+                if status != 1:
+                    reverted.append(h)
+                last_error = ""
+                break
+            except Exception as exc:
+                last_error = type(exc).__name__
+                time.sleep(1.5)
+        if last_error:
+            unfetched.append((h, last_error))
+    bad = bool(reverted or unfetched)
+    failures += 1 if bad else 0
     print(f"[{'PASS' if not bad else 'FAIL'}] swaps: {len(swaps)} refetched from Arc, "
-          f"{len(bad)} not status 1")
+          f"{len(reverted)} not status 1, {len(unfetched)} could not be fetched after 3 attempts")
+    for h, err in unfetched:
+        print(f"       unfetched {h} ({err}), check by hand: {config.tx_url(h)}")
+    for h in reverted:
+        print(f"       reverted {h}: {config.tx_url(h)}")
 
     # 3. anchors
     address = anchor.anchor_address()

@@ -154,7 +154,17 @@ def verify_ledger(path: Path | None = None) -> dict[str, Any]:
     Recompute every receipt hash from its own canonical bytes and check the
     prev-hash chain. Returns a report; never raises.
     """
-    rows = read_all(path)
+    return verify_rows(read_all(path))
+
+
+def verify_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """
+    The same check over rows that came from anywhere: the local file, the
+    dashboard's /ledger.json export, or a judge's own download. verify.py used
+    to call verify_ledger() and so silently checked the LOCAL file even when
+    asked to verify a URL; on a clone with no data/ that reported 0 receipts
+    as a pass. Added 2026-09-10 so the rows verified are the rows named.
+    """
     bad_hash: list[int] = []
     bad_chain: list[int] = []
     prev = ""
