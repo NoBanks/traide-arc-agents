@@ -243,7 +243,7 @@ def index(request: Request) -> HTMLResponse:
 <div class="kv"><span>address</span><a class="mono" href="{agent['explorer']}">{agent['address'][:10]}...{agent['address'][-6:]}</a></div>
 <div class="kv"><span>path</span><span class="mono">{html.escape(agent['derivation_path'])}</span></div>
 <div class="kv"><span>USDC</span><span class="mono">{_fmt_usdc(bal.get('usdc_units_6'))}</span></div>
-<div class="kv"><span>LINKMock</span><span class="mono">{_fmt_link(bal.get('link_wei_18'))}</span></div>
+<div class="kv"><span>{config.SECOND_SYMBOL}</span><span class="mono">{_fmt_link(bal.get('link_wei_18'))}</span></div>
 <div class="kv"><span>value now</span><span class="mono">{entry.get('live_value_usdc', 0):.6f}</span></div>
 <div class="kv"><span>value if held</span><span class="mono">{entry.get('hold_value_usdc', 0):.6f}</span></div>
 <div class="kv"><span>P and L vs hold</span><span class="mono">{(pnl if pnl is not None else 0):+.6f} USDC</span></div>
@@ -256,7 +256,7 @@ def index(request: Request) -> HTMLResponse:
         swap = r.get("swap") or {}
         anch = row.get("anchor") or {}
         action = r.get("action", "")
-        cls = {"BUY_LINK": "buy", "SELL_LINK": "sell"}.get(action, "hold")
+        cls = {config.BUY_ACTION: "buy", config.SELL_ACTION: "sell"}.get(action, "hold")
         swap_cell = (
             f'<a class="mono" href="{swap["explorer"]}">{swap["hash"][:12]}...</a>'
             if swap.get("explorer") else '<span class="mono hold">none</span>'
@@ -293,9 +293,9 @@ def index(request: Request) -> HTMLResponse:
 
     body = f"""<title>TRAIDE agents on Arc</title><style>{CSS}</style>
 <div class="wrap">
-<h1>TRAIDE agents on Arc testnet</h1>
+<h1>TRAIDE agents on {config.NETWORK_LABEL}</h1>
 <p class="sub">Three autonomous agents, each with its own wallet, trading a real
-TRAIDEAMM pair on Arc testnet {config.CHAIN_ID}. Every decision is driven by live
+TRAIDEAMM pair on {config.NETWORK_LABEL} {config.CHAIN_ID}. Every decision is driven by live
 data from The Graph and recorded as a keeper receipt anchored on chain.</p>
 {status_line}
 {banner}
@@ -314,7 +314,7 @@ data from The Graph and recorded as a keeper receipt anchored on chain.</p>
 </div>
 <div class="card"><h3>Pool, TRAIDEAMM</h3>
 <div class="kv"><span>USDC reserve</span><span class="mono">{_fmt_usdc(pool.get('usdc_units_6'))}</span></div>
-<div class="kv"><span>LINKMock reserve</span><span class="mono">{_fmt_link(pool.get('link_wei_18'))}</span></div>
+<div class="kv"><span>{config.SECOND_SYMBOL} reserve</span><span class="mono">{_fmt_link(pool.get('link_wei_18'))}</span></div>
 <div class="kv"><span>AMM</span><a class="mono" href="{config.address_url(config.TRAIDE_AMM)}">{config.TRAIDE_AMM[:10]}...</a></div>
 <div class="kv"><span>cycle</span><span class="mono">{state.get('cycle','-')}</span></div>
 </div>

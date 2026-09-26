@@ -9,7 +9,13 @@ the demo path.
 
 # traide-arc-agents
 
-**Live demo: https://arc-agents.nohumannearby.com**
+**Live on Arc mainnet (chain 5042) since 2026-09-26.** Agents trade USDC/EURC on TRAIDEAMM
+[0x4b6781AfC7e91D65acdD37a424D7A43f170f9120](https://explorer.arc.io/address/0x4b6781AfC7e91D65acdD37a424D7A43f170f9120)
+and anchor receipts in ArcReceiptAnchor
+[0xA7A7A397D0396C99460F66568cCE6f9664fEA929](https://explorer.arc.io/address/0xA7A7A397D0396C99460F66568cCE6f9664fEA929).
+Details and receipts: [docs/MAINNET_READY.md](docs/MAINNET_READY.md).
+
+**Testnet live demo: https://arc-agents.nohumannearby.com**
 
 ## JUDGE QUICKSTART
 
@@ -127,7 +133,7 @@ be updated when the system changes, rather than being a screenshot nobody can ed
 | [FEEDBACK.md](FEEDBACK.md) | Feedback to the Uniswap Foundation: what we built on the Uniswap v3 subgraph, what worked, four concrete documentation and tooling suggestions, and a v2-fork finding that breaks every fork running OpenZeppelin 5 |
 | [docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md](docs/UNISWAP_FEEDBACK_FORM_ANSWERS.md) | Every field of the Uniswap Developer Feedback Form with drafted plain-text answers, ready to paste. Not submitted |
 | [docs/PRIZE_EVIDENCE.md](docs/PRIZE_EVIDENCE.md) | Each prize requirement quoted from the ETHOnline prizes page, mapped to a file path, address or tx hash. Includes the PRE-EXISTING versus NEW disclosure and an honest open-items list |
-| [docs/MAINNET_READY.md](docs/MAINNET_READY.md) | The config-only path to Arc mainnet, what must not change, gas budget, and a preflight checklist. States up front that nothing is verified on mainnet because mainnet is not live until Sep 16 |
+| [docs/MAINNET_READY.md](docs/MAINNET_READY.md) | The config-only path to Arc mainnet, what must not change, gas budget, and a preflight checklist. Now opens with the 2026-09-26 mainnet deployment: addresses, the inert token check, the pool, and the run commands |
 | [docs/sample_receipt_price_tier.json](docs/sample_receipt_price_tier.json) | A real decision receipt composing both Graph products, with its swap and anchor transactions |
 | [scripts/verify_receipt.py](scripts/verify_receipt.py) | One command verifies one receipt end to end: hash, on-chain anchor and attester, anchor tx, swap tx, live re-run of its Graph calls. See JUDGE QUICKSTART |
 | [/ledger.json](https://arc-agents.nohumannearby.com/ledger.json) | The whole hash-chained ledger as one public JSON document, byte-true per row, served by the dashboard |

@@ -84,7 +84,7 @@ class ArcClient:
         self.w3 = Web3(Web3.HTTPProvider(rpc_url or config.rpc_url(), request_kwargs={"timeout": 45}))
         chain_id = self.w3.eth.chain_id
         if chain_id != config.CHAIN_ID:
-            raise RuntimeError(f"wrong chain: {chain_id}, expected Arc testnet {config.CHAIN_ID}")
+            raise RuntimeError(f"wrong chain: {chain_id}, expected {config.NETWORK_LABEL} {config.CHAIN_ID}")
         self.chain_id = chain_id
         self.usdc = self.contract(config.USDC, ERC20_ABI)
         self.link = self.contract(config.LINKMOCK, ERC20_ABI)

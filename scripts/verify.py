@@ -6,7 +6,8 @@ It does four things and prints a pass or fail for each:
 
   1. Recomputes every receipt hash from its own canonical bytes and walks the
      prev-hash chain, so a tampered receipt is caught.
-  2. Refetches every swap transaction from Arc and requires status 1.
+  2. Refetches every swap transaction from Arc and requires status 1 (falls back to
+     Arc's official explorer when the public RPC has pruned old history).
   3. Calls attestedAt(bytes32) on the anchor contract for every anchored receipt
      hash and requires a nonzero first-seen timestamp.
   4. Confirms every receipt carries Graph provenance with a response hash, and
@@ -34,6 +35,8 @@ from arc_agents import anchor, config, receipts
 from arc_agents.chain import ANCHOR_ABI, ArcClient
 
 PUBLIC_LEDGER = "https://arc-agents.nohumannearby.com/ledger.json"
+# Arc's official Blockscout explorer (docs.arc.io lists explorer.testnet.arc.io; testnet.arcscan.app redirects here).
+EXPLORER_API = ("https://explorer.arc.io/api/v2/transactions/" if config.IS_MAINNET else "https://explorer.testnet.arc.io/api/v2/transactions/")
 
 
 def load_rows(ledger: str) -> list[dict]:
@@ -96,10 +99,41 @@ def main(argv: list[str] | None = None) -> int:
                 time.sleep(1.5)
         if last_error:
             unfetched.append((h, last_error))
+    # The public Arc testnet RPC prunes transaction history after a few days: on 2026-09-22 it
+    # answered TransactionNotFound for 1,272 of 1,305 swaps that are all present and successful on
+    # Arc's own Blockscout explorer. So an RPC miss falls back to the explorer API, and the output
+    # says which source confirmed each swap. A swap missing from BOTH is still a failure.
+    via_explorer = []
+    if unfetched:
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _explorer(item):
+            h, err = item
+            for attempt in range(3):
+                try:
+                    req = urllib.request.Request(EXPLORER_API + h, headers={"User-Agent": "traide-verify"})
+                    d = json.load(urllib.request.urlopen(req, timeout=20))
+                    return h, err, d.get("result"), d.get("status")
+                except Exception:
+                    time.sleep(1.5)
+            return h, err, None, None
+
+        still = []
+        with ThreadPoolExecutor(8) as ex:
+            for h, err, result, status in ex.map(_explorer, unfetched):
+                if result == "success" and status == "ok":
+                    via_explorer.append(h)
+                elif result is not None:
+                    reverted.append(h)
+                else:
+                    still.append((h, err))
+        unfetched = still
     bad = bool(reverted or unfetched)
     failures += 1 if bad else 0
-    print(f"[{'PASS' if not bad else 'FAIL'}] swaps: {len(swaps)} refetched from Arc, "
-          f"{len(reverted)} not status 1, {len(unfetched)} could not be fetched after 3 attempts")
+    print(f"[{'PASS' if not bad else 'FAIL'}] swaps: {len(swaps)} checked, "
+          f"{len(swaps) - len(via_explorer) - len(unfetched) - len(reverted)} confirmed by the Arc RPC, "
+          f"{len(via_explorer)} confirmed by the Arc explorer (RPC history pruned), "
+          f"{len(reverted)} not successful, {len(unfetched)} found in neither")
     for h, err in unfetched:
         print(f"       unfetched {h} ({err}), check by hand: {config.tx_url(h)}")
     for h in reverted:

@@ -1,3 +1,47 @@
+# Arc mainnet: deployed 2026-09-26
+
+**Live on Arc mainnet (chain id 5042).** Chain id, RPC, explorer, USDC and EURC addresses were
+read from docs.arc.io on 2026-09-26 and confirmed on chain (`eth_chainId` = `0x13b2`, 20 gwei gas,
+69 bytes of code at the CREATE2 proxy). Full record: `deployments/arc-5042.json`.
+
+Exactly three contracts went to mainnet. Nothing else from the 11-contract suite did.
+
+| Contract | Address | How |
+|---|---|---|
+| TRAIDEAMM | [0x4b6781AfC7e91D65acdD37a424D7A43f170f9120](https://explorer.arc.io/address/0x4b6781AfC7e91D65acdD37a424D7A43f170f9120) | CREATE2, salt V1, byte-exact testnet calldata, same address as testnet |
+| TRAIDEToken | [0x341936d89E1182c52440351B7AA1070001CEeb99](https://explorer.arc.io/address/0x341936d89E1182c52440351B7AA1070001CEeb99) | CREATE2, salt V1. Inert, see below |
+| ArcReceiptAnchor | [0xA7A7A397D0396C99460F66568cCE6f9664fEA929](https://explorer.arc.io/address/0xA7A7A397D0396C99460F66568cCE6f9664fEA929) | plain CREATE, same bytecode as testnet |
+
+**The TRAIDE token contract is inert and is not a token launch.** TRAIDEAMM reads fee-discount
+tiers from it on every swap, so it has to exist. Read on chain after deploy: `owner()` is the
+stateless CREATE2 proxy `0x4e59b448...956C`, which can call nothing, and the proxy holds 100
+percent of the 1,000,000,000 supply. Nothing can mint, pause or move it. Circulating supply: 0.
+
+**Pool:** USDC / EURC (Circle's EURC `0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1`, a real asset;
+the testnet LINKMock does not go to mainnet), seeded with 2.00 USDC and 1.75 EURC.
+
+**Agents:** the same three derived wallets as testnet, each funded with 1.00 USDC and 0.29 EURC.
+Cycle every 1800 seconds on mainnet, because gas is real money.
+
+**Funding path, all Circle rails:** 13 USDC bridged Ethereum to Arc with CCTP and the Forwarding
+Service (`bridge/bridge_eth_to_arc.mjs`), then 3 USDC swapped to EURC with Circle Swap Kit
+(`bridge/swap_usdc_to_eurc_arc.mjs`).
+
+**Run it:**
+
+```bash
+ARC_NETWORK=mainnet python3.11 -m mainnet.deploy_mainnet --plan   # predicts, sends nothing
+ARC_NETWORK=mainnet python3.11 -m mainnet.setup_mainnet
+ARC_NETWORK=mainnet python3.11 -m arc_agents.runner --once
+ARC_NETWORK=mainnet python3.11 -m scripts.verify
+```
+
+Unset `ARC_NETWORK` and every value is the original testnet value, byte for byte.
+
+---
+
+The section below is the pre-launch readiness note, kept as written on 2026-09-07.
+
 <!--
 # CITATION: chain facts below were read live from https://rpc.testnet.arc.io and
 https://docs.arc.io/arc/references/connect-to-arc.md on 2026-09-07. Prize text is quoted from

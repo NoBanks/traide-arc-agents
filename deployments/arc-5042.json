@@ -1,0 +1,161 @@
+{
+  "agents": [
+    {
+      "address": "0x537F486eAEc5e564f3F9d8d010f8A5992cda2544",
+      "derivation_path": "m/44'/60'/0'/0/1",
+      "explorer": "https://explorer.arc.io/address/0x537F486eAEc5e564f3F9d8d010f8A5992cda2544",
+      "name": "PASSIVE"
+    },
+    {
+      "address": "0x5C33e8ec0087522F883a32A76D486D8ab2282701",
+      "derivation_path": "m/44'/60'/0'/0/2",
+      "explorer": "https://explorer.arc.io/address/0x5C33e8ec0087522F883a32A76D486D8ab2282701",
+      "name": "AGGRESSIVE"
+    },
+    {
+      "address": "0x27e13BC4CB091E7696D66c30887E3EE85f477c3B",
+      "derivation_path": "m/44'/60'/0'/0/3",
+      "explorer": "https://explorer.arc.io/address/0x27e13BC4CB091E7696D66c30887E3EE85f477c3B",
+      "name": "REBALANCE"
+    }
+  ],
+  "amm": "0x4b6781AfC7e91D65acdD37a424D7A43f170f9120",
+  "anchor": {
+    "address": "0xA7A7A397D0396C99460F66568cCE6f9664fEA929",
+    "deploy_tx": {
+      "block": 22926959,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x351d69be0a0d0f83c7a1255ae11c48e4cbb6c113659ae3787851373d00e93f88",
+      "gas_used": 179975,
+      "hash": "0x351d69be0a0d0f83c7a1255ae11c48e4cbb6c113659ae3787851373d00e93f88",
+      "label": "deploy_anchor",
+      "status": 1
+    },
+    "explorer": "https://explorer.arc.io/address/0xA7A7A397D0396C99460F66568cCE6f9664fEA929"
+  },
+  "chain_id": 5042,
+  "deployer": "0xcEDdA90b60748e04Ff9C4123c5f49544611748e5",
+  "eurc": "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1",
+  "token": {
+    "address": "0x341936d89E1182c52440351B7AA1070001CEeb99",
+    "explorer": "https://explorer.arc.io/address/0x341936d89E1182c52440351B7AA1070001CEeb99",
+    "inert_check": {
+      "circulating": "0",
+      "held_by_create2_proxy": "1000000000000000000000000000",
+      "owner": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+      "total_supply": "1000000000000000000000000000"
+    },
+    "salt_version": "V1"
+  },
+  "txs": {
+    "add_liquidity": {
+      "block": 22927071,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0xafd0c84e3cb52aff51f80576cd3cd773329fff0d6a8a2a3ef97f1dcaa5c4c015",
+      "gas_used": 200326,
+      "hash": "0xafd0c84e3cb52aff51f80576cd3cd773329fff0d6a8a2a3ef97f1dcaa5c4c015",
+      "label": "add_liquidity",
+      "status": 1
+    },
+    "approve_eurc_amm": {
+      "block": 22927068,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0xf9772617ce8aab88f8df1fee3cc7c5c7e8e359f80dd58b8a8720e58584a81677",
+      "gas_used": 55437,
+      "hash": "0xf9772617ce8aab88f8df1fee3cc7c5c7e8e359f80dd58b8a8720e58584a81677",
+      "label": "approve_eurc_amm",
+      "status": 1
+    },
+    "approve_usdc_amm": {
+      "block": 22927065,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x49eebd6d737af9d9acf0bacff316f132ad8a743d82834f17cb83b4fdc0e54262",
+      "gas_used": 55438,
+      "hash": "0x49eebd6d737af9d9acf0bacff316f132ad8a743d82834f17cb83b4fdc0e54262",
+      "label": "approve_usdc_amm",
+      "status": 1
+    },
+    "create_pair_usdc_eurc": {
+      "block": 22927062,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x4811912e68d137ebd69a23742d89bfb066fa3ff990bda0a88c36fd2b60812a36",
+      "gas_used": 68650,
+      "hash": "0x4811912e68d137ebd69a23742d89bfb066fa3ff990bda0a88c36fd2b60812a36",
+      "label": "create_pair_usdc_eurc",
+      "status": 1
+    },
+    "deploy_amm": {
+      "block": 22926957,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x34775b024b760440ff064546e6e4716cc1da0567f6350b646ba8cb16bae1aadc",
+      "gas_used": 1472393,
+      "hash": "0x34775b024b760440ff064546e6e4716cc1da0567f6350b646ba8cb16bae1aadc",
+      "label": "deploy_amm",
+      "status": 1
+    },
+    "deploy_token": {
+      "block": 22926955,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0xf620487283f9cdb3565c32fe39acb08b4e54d72e1f26b3d909d80f216a70aa90",
+      "gas_used": 1087368,
+      "hash": "0xf620487283f9cdb3565c32fe39acb08b4e54d72e1f26b3d909d80f216a70aa90",
+      "label": "deploy_token",
+      "status": 1
+    },
+    "fund_eurc_AGGRESSIVE": {
+      "block": 22927082,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0xe633832b6fa5a3959ca7f134dd8a8ee04a3926d91c2468360f4213d292aacca6",
+      "gas_used": 62147,
+      "hash": "0xe633832b6fa5a3959ca7f134dd8a8ee04a3926d91c2468360f4213d292aacca6",
+      "label": "fund_eurc_AGGRESSIVE",
+      "status": 1
+    },
+    "fund_eurc_PASSIVE": {
+      "block": 22927076,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x16837522ac536f67b49d246772d302b525c870036d191ad50229e3aa673cf474",
+      "gas_used": 62159,
+      "hash": "0x16837522ac536f67b49d246772d302b525c870036d191ad50229e3aa673cf474",
+      "label": "fund_eurc_PASSIVE",
+      "status": 1
+    },
+    "fund_eurc_REBALANCE": {
+      "block": 22927088,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0xc3b249e9b366052be079dba47317bf7cc3060dd5619a0562849ea9d2fb29ad2c",
+      "gas_used": 62159,
+      "hash": "0xc3b249e9b366052be079dba47317bf7cc3060dd5619a0562849ea9d2fb29ad2c",
+      "label": "fund_eurc_REBALANCE",
+      "status": 1
+    },
+    "fund_usdc_AGGRESSIVE": {
+      "block": 22927079,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x4d0a2eebc94397760d59c4b37409dfb2c36c68be40b1b41a1680505c12105be8",
+      "gas_used": 21000,
+      "hash": "0x4d0a2eebc94397760d59c4b37409dfb2c36c68be40b1b41a1680505c12105be8",
+      "label": "fund_usdc_AGGRESSIVE",
+      "status": 1
+    },
+    "fund_usdc_PASSIVE": {
+      "block": 22927074,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x7221d26b368c6a3ae6d0d0786b10a4a1fcd9de0638eae08639dc4c5501272cf4",
+      "gas_used": 21000,
+      "hash": "0x7221d26b368c6a3ae6d0d0786b10a4a1fcd9de0638eae08639dc4c5501272cf4",
+      "label": "fund_usdc_PASSIVE",
+      "status": 1
+    },
+    "fund_usdc_REBALANCE": {
+      "block": 22927085,
+      "effective_gas_price": 24000000001,
+      "explorer": "https://explorer.arc.io/tx/0x59daa919589b2563812732368220f13c0bcf2c33abddba34a9a8ef9450dc36f0",
+      "gas_used": 21000,
+      "hash": "0x59daa919589b2563812732368220f13c0bcf2c33abddba34a9a8ef9450dc36f0",
+      "label": "fund_usdc_REBALANCE",
+      "status": 1
+    }
+  },
+  "usdc": "0x3600000000000000000000000000000000000000"
+}

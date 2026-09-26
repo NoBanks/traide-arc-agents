@@ -28,7 +28,7 @@ from .chain import ANCHOR_ABI, ArcClient
 SOLC_VERSION = "0.8.25"
 SOURCE_PATH = config.REPO_ROOT / "contracts" / "ArcReceiptAnchor.sol"
 BUILD_PATH = config.REPO_ROOT / "build" / "ArcReceiptAnchor.json"
-DEPLOYMENT_PATH = config.REPO_ROOT / "deployments" / "arc-5042002.json"
+DEPLOYMENT_PATH = config.DEPLOYMENT_PATH
 
 
 def compile_anchor() -> dict[str, Any]:

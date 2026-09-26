@@ -169,7 +169,7 @@ def run_cycle(
 
 def _execute(client: ArcClient, wallet: AgentWallet, decision: agents.Decision) -> dict[str, Any]:
     """Approve if needed, quote, then swap with a 2 percent slippage floor."""
-    if decision.action == "BUY_LINK":
+    if decision.action == config.BUY_ACTION:
         token_in, token_out, amount = config.USDC, config.LINKMOCK, decision.size_usdc_units
     else:
         token_in, token_out, amount = config.LINKMOCK, config.USDC, decision.size_link_wei

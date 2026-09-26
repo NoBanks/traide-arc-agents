@@ -19,11 +19,20 @@ RECEIPTS_PATH = DATA_DIR / "receipts.jsonl"
 STATE_PATH = DATA_DIR / "state.json"
 DEPLOYMENT_PATH = REPO_ROOT / "deployments" / "arc-5042002.json"
 
+# ---------------------------------------------------------------- network select
+
+# ARC_NETWORK=mainnet switches every chain-specific value below to Arc mainnet.
+# Unset (or "testnet") keeps the original testnet values byte for byte, so the
+# testnet runner and its receipt history are untouched.
+NETWORK = os.environ.get("ARC_NETWORK", "testnet").strip().lower()
+IS_MAINNET = NETWORK == "mainnet"
+
 # ---------------------------------------------------------------- Arc testnet
 
 CHAIN_ID = 5042002
 DEFAULT_RPC_URL = "https://rpc.testnet.arc.io"
 EXPLORER_BASE = "https://testnet.arcscan.app"
+NETWORK_LABEL = "Arc testnet"
 
 # Arc's gas token is USDC. 0x3600...0000 is the same balance exposed as an
 # ERC-20 with decimals() == 6, while eth_getBalance reports it at 18 decimals.
@@ -114,10 +123,47 @@ SWAP_MAX_USDC_UNITS = 10_000               # 0.010 USDC
 # the whole judging window. The burn-in run used --interval 60.
 CYCLE_SECONDS = int(os.environ.get("ARC_AGENT_CYCLE_SECONDS", "300"))
 
+# ---------------------------------------------------------------- Arc mainnet
+#
+# Values read live on 2026-09-26 from https://docs.arc.io/arc/references/connect-to-arc.md
+# and contract-addresses.md, then confirmed on chain: eth_chainId = 0x13b2 (5042),
+# eth_gasPrice = 20 gwei, and 69 bytes of code at the canonical CREATE2 proxy.
+#
+# The second leg of the pool is Circle's EURC (6 decimals), a real asset, not a mock.
+# The LINKMOCK / LINK names are kept as internal identifiers so the testnet code path
+# does not change; on mainnet they hold the EURC address and decimals, and every
+# human-facing label (actions, dashboard) reads SECOND_SYMBOL instead.
+SECOND_SYMBOL = "LINK"
+
+if IS_MAINNET:
+    CHAIN_ID = 5042
+    DEFAULT_RPC_URL = "https://rpc.mainnet.arc.io"
+    EXPLORER_BASE = "https://explorer.arc.io"
+    NETWORK_LABEL = "Arc mainnet"
+    DATA_DIR = REPO_ROOT / "data-mainnet"
+    RECEIPTS_PATH = DATA_DIR / "receipts.jsonl"
+    STATE_PATH = DATA_DIR / "state.json"
+    DEPLOYMENT_PATH = REPO_ROOT / "deployments" / "arc-5042.json"
+    GRAPH_POOL_CACHE_PATH = DATA_DIR / "graph_reference_pool.json"
+    SUBGRAPH_CACHE_PATH = DATA_DIR / "graph_subgraph_target.json"
+    LINKMOCK = "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1"   # EURC on Arc mainnet
+    LINKMOCK_DECIMALS = 6
+    SECOND_SYMBOL = "EURC"
+    # Mainnet gas is real money: smaller funding, lower floor, slower cadence.
+    AGENT_FUND_USDC_UNITS = 1_000_000          # 1.0 USDC per agent
+    AGENT_FUND_LINK_WEI = 290_000              # 0.29 EURC per agent
+    DEPLOYER_FLOOR_USDC_UNITS = 1_000_000      # never draw the deployer below 1 USDC
+    CYCLE_SECONDS = int(os.environ.get("ARC_AGENT_CYCLE_SECONDS", "1800"))
+
+BUY_ACTION = f"BUY_{SECOND_SYMBOL}"
+SELL_ACTION = f"SELL_{SECOND_SYMBOL}"
+
 # ------------------------------------------------------------------- env reads
 
 
 def rpc_url() -> str:
+    if IS_MAINNET:
+        return os.environ.get("ARC_MAINNET_RPC_URL", DEFAULT_RPC_URL)
     return os.environ.get("ARC_RPC_URL", DEFAULT_RPC_URL)
 
 

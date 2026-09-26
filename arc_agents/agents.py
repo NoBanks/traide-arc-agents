@@ -29,7 +29,7 @@ from typing import Literal
 from . import config
 from .graph import GraphSignal, NO_KEY_MESSAGE, PRICE_UNAVAILABLE_OTHER
 
-Action = Literal["BUY_LINK", "SELL_LINK", "HOLD"]
+Action = str  # config.BUY_ACTION, config.SELL_ACTION or "HOLD"
 
 # Thresholds. Chosen so a flat market produces HOLD rather than churn.
 # The activity score is a fractional deviation from the measured 9.64 tx/s
@@ -143,7 +143,7 @@ def _aggressive(spendable_usdc: int, link: int, activity: float | None, change: 
     if direction > 0:
         if spendable_usdc < size:
             return _hold(f"AGGRESSIVE would buy but holds only {spendable_usdc} USDC units spendable")
-        return Decision("BUY_LINK", "AGGRESSIVE follows the trend. " + reason, size_usdc_units=size)
+        return Decision(config.BUY_ACTION, "AGGRESSIVE follows the trend. " + reason, size_usdc_units=size)
 
     # Sell an amount of LINK worth roughly the same USDC size, using the pool rate
     # at call time in the runner. Here we express it as a fraction of inventory.
@@ -152,7 +152,7 @@ def _aggressive(spendable_usdc: int, link: int, activity: float | None, change: 
     portion = int(link * scale * 0.1)
     if portion <= 0:
         return _hold("AGGRESSIVE sell size rounded to zero")
-    return Decision("SELL_LINK", "AGGRESSIVE follows the trend. " + reason, size_link_wei=portion)
+    return Decision(config.SELL_ACTION, "AGGRESSIVE follows the trend. " + reason, size_link_wei=portion)
 
 
 def _passive(spendable_usdc: int, link: int, activity: float | None, change: float | None) -> Decision:
@@ -167,7 +167,7 @@ def _passive(spendable_usdc: int, link: int, activity: float | None, change: flo
         if spendable_usdc < size:
             return _hold(f"PASSIVE would buy the dip but holds only {spendable_usdc} USDC units spendable")
         return Decision(
-            "BUY_LINK", "PASSIVE buys weakness, contrarian to the Graph signal. " + reason,
+            config.BUY_ACTION, "PASSIVE buys weakness, contrarian to the Graph signal. " + reason,
             size_usdc_units=size,
         )
 
@@ -177,7 +177,7 @@ def _passive(spendable_usdc: int, link: int, activity: float | None, change: flo
     if portion <= 0:
         return _hold("PASSIVE sell size rounded to zero")
     return Decision(
-        "SELL_LINK", "PASSIVE sells strength, contrarian to the Graph signal. " + reason,
+        config.SELL_ACTION, "PASSIVE sells strength, contrarian to the Graph signal. " + reason,
         size_link_wei=portion,
     )
 
@@ -220,7 +220,7 @@ def _rebalance(
         size = _clamp_usdc(int(abs(drift) * total))
         if spendable_usdc < size:
             return _hold(reason + f", but only {spendable_usdc} USDC units spendable")
-        return Decision("BUY_LINK", reason, size_usdc_units=size)
+        return Decision(config.BUY_ACTION, reason, size_usdc_units=size)
 
     # Overweight LINK: sell the excess, capped by the per-swap ceiling in USDC terms.
     excess_usdc = _clamp_usdc(int(drift * total))
@@ -228,4 +228,4 @@ def _rebalance(
     portion = min(portion, link)
     if portion <= 0:
         return _hold(reason + ", but the sell size rounded to zero")
-    return Decision("SELL_LINK", reason, size_link_wei=portion)
+    return Decision(config.SELL_ACTION, reason, size_link_wei=portion)

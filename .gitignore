@@ -7,3 +7,5 @@ venv/
 build/
 *.egg-info/
 .DS_Store
+data-mainnet/
+bridge/node_modules/
