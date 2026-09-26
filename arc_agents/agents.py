@@ -207,12 +207,12 @@ def _rebalance(
 
     if abs(drift) < REBALANCE_BAND:
         return _hold(
-            f"REBALANCE inside band: LINK share {link_share:.3f} versus target "
+            f"REBALANCE inside band: {config.SECOND_SYMBOL} share {link_share:.3f} versus target "
             f"{target:.3f} set by the Graph price tier"
         )
 
     reason = (
-        f"REBALANCE: LINK share {link_share:.3f}, target {target:.3f} from the "
+        f"REBALANCE: {config.SECOND_SYMBOL} share {link_share:.3f}, target {target:.3f} from the "
         f"Graph price tier ({change * 100:+.2f} percent), drift {drift:+.3f}"
     )
 
